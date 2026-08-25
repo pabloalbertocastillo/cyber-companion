@@ -6,7 +6,7 @@ holographic entity that reacts to the state of a Gentoo Linux + Hyprland system.
 The project starts as a lightweight desktop companion and is intentionally
 designed to evolve into a visible interface for a local or remote AI system.
 
-![Cyber Companion concept](assets/concept/companion-concept-v1.png)
+![Cyber Companion concept](assets/concept/companion-concept-v1.webp)
 
 ## Manifestations
 
