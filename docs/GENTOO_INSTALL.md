@@ -38,6 +38,7 @@ echo
 echo "===== EXISTING WPETS/BONGOCAT ====="
 command -v wpets || true
 command -v wpets-all || true
+command -v bongocat || true
 pgrep -a -f 'wpets|bongocat' || true
 ```
 
@@ -46,22 +47,21 @@ currently requires CMake 3.24 or newer, GCC 15 or newer **or** Clang 19 or
 newer, Make, `wayland-client` and `libudev`. Only one supported compiler is
 required.
 
-## 2. Planned source build
+## 2. Minimal pinned source build
 
-The target location follows the workstation convention of keeping development
-tools under `/data`:
+The project pins the verified upstream revision in `UPSTREAM.lock`. Build the
+minimal renderer without tests, extra embedded character collections or a
+system-wide installation:
 
 ```bash
-mkdir -p /data/Development/tools
-cd /data/Development/tools
-git clone https://github.com/furudbat/wayland-vpets.git
-cd wayland-vpets
-cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
+cd /data/Development/projects/cyber-companion
+./scripts/build-renderer.sh
 ```
 
-Do not run `sudo cmake --install build` during the first validation. Run the
-binary directly from the build tree after confirming its generated path.
+The script clones only the upstream renderer into
+`/data/Development/tools/wayland-vpets`, checks out the pinned commit and builds
+`build-cyber-companion/bongocat`. It stops rather than modifying an unexpected
+or dirty existing checkout. It does not use `sudo` or install files.
 
 ## 3. Safe test configuration
 
@@ -78,7 +78,7 @@ Autostart is deliberately deferred until interactive testing succeeds on both
 monitors. The expected final shape is:
 
 ```ini
-exec-once = sleep 5 && /path/to/wpets-all --watch-config --config ~/.config/cyber-companion/wpets.conf --monitor DP-2
+exec-once = sleep 5 && /data/Development/tools/wayland-vpets/build-cyber-companion/bongocat --watch-config --config ~/.config/cyber-companion/wpets.conf --monitor DP-2
 ```
 
 The five-second delay avoids a documented layer-order conflict with Waybar.
