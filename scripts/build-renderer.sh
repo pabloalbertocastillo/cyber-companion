@@ -13,7 +13,7 @@ if [ ! -d /data/Development/tools ]; then
 fi
 
 if [ ! -e "$source_dir" ]; then
-    git clone --filter=blob:none --no-checkout "$repository" "$source_dir"
+    git clone --filter=blob:none "$repository" "$source_dir"
 fi
 
 if [ ! -d "$source_dir/.git" ]; then
