@@ -22,6 +22,7 @@ make --version | head -n 1
 echo
 echo "===== WAYLAND DEVELOPMENT FILES ====="
 pkg-config --modversion wayland-client 2>/dev/null || echo "wayland-client: missing"
+pkg-config --modversion libudev 2>/dev/null || echo "libudev: missing"
 
 echo
 echo "===== OPTIONAL EVENT SOURCES ====="
@@ -40,9 +41,10 @@ command -v wpets-all || true
 pgrep -a -f 'wpets|bongocat' || true
 ```
 
-Do not install anything until the output has been reviewed. Upstream currently
-documents GCC 15 or Clang 19, CMake, Make and `wayland-client` as build
-requirements.
+Do not install anything until the output has been reviewed. The upstream build
+currently requires CMake 3.24 or newer, GCC 15 or newer **or** Clang 19 or
+newer, Make, `wayland-client` and `libudev`. Only one supported compiler is
+required.
 
 ## 2. Planned source build
 
