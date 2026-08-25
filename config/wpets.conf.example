@@ -1,0 +1,33 @@
+# Cyber Companion Phase 0 renderer validation
+# No keyboard_device is intentionally configured.
+
+cat_height=128
+cat_align=right
+cat_x_offset=-48
+cat_y_offset=-8
+
+overlay_height=152
+overlay_position=bottom
+overlay_layer=overlay
+overlay_opacity=0
+
+enable_antialiasing=1
+enable_debug=0
+fps=30
+
+# Temporary upstream sprite for compatibility testing only.
+animation_name=bongocat
+
+idle_animation=1
+idle_sleep_timeout=300
+
+update_rate=1000
+cpu_threshold=70
+cpu_running_factor=0.35
+
+movement_radius=160
+movement_speed=700
+enable_movement_debug=0
+
+# The workstation uses DP-2 on the left and DP-1 on the right.
+monitor=DP-2
