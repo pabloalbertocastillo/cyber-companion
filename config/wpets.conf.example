@@ -34,10 +34,11 @@ custom_working_frames=2
 custom_moving_frames=2
 custom_mirror_x_moving=1
 
-idle_animation=1
+# Keep the resting pose stable; animate state transitions and movement.
+idle_animation=0
 
-# Small, frequent steps produce smoother movement than v0.1.
-animation_speed=80
+# One-pixel steps every 50 ms target 20 position updates per second.
+animation_speed=50
 idle_sleep_timeout=300
 
 # System activity: use the working animation above 70% CPU.
@@ -47,8 +48,8 @@ cpu_running_factor=0.35
 
 # Autonomous movement near the lower-right corner.
 movement_radius=260
-movement_speed=2
-movement_wait_factor=18.0
+movement_speed=1
+movement_wait_factor=30.0
 enable_movement_debug=0
 
 # The workstation uses DP-2 on the left and DP-1 on the right.
