@@ -29,6 +29,7 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Validate Wayland V-Pets on the target system
 - [x] Define the Wisp v1 production sprite contract
 - [x] Produce a deterministic six-frame Wisp idle preview
+- [x] Produce deterministic takeoff, flight and landing previews
 - [ ] Produce the first Wisp sprite sheet
 - [ ] Add MPRIS music reactions
 - [ ] Add libvirt, network, idle and thermal adapters
@@ -57,18 +58,18 @@ Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
 
 Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
-The default configuration now runs the v0.4 idle-only acceptance preview. It
-keeps the avatar fixed in world space and disables system reactions until the
-remaining transition rows exist. The v0.3 atlas remains only as a rejected
-visual prototype.
+The default configuration now runs the v0.5 movement acceptance preview. It
+adds coherent takeoff, horizontal flight and landing rows around the accepted
+idle loop. System reactions remain disabled until their own transition rows
+exist. The v0.3 atlas remains only as a rejected visual prototype.
 
 Rebuild and validate the preview with:
 
 ```bash
-./scripts/build-idle-preview.sh
+./scripts/build-movement-preview.sh
 python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-idle-v0.4.png \
-  assets/source/wisp/manifest-idle-v0.4.json
+  assets/sprites/companion-wisp-movement-v0.5.png \
+  assets/source/wisp/manifest-movement-v0.5.json
 ```
 
 ## Upstream renderer candidate

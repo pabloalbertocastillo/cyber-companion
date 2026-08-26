@@ -1,6 +1,6 @@
-# Cyber Companion Wisp v0.4 idle preview
-# This deliberately enables only the six-frame idle loop. CPU reactions and
-# autonomous movement remain disabled until their transition rows are ready.
+# Cyber Companion Wisp v0.5 movement preview
+# Idle, takeoff, horizontal flight and landing use one canonical raster master.
+# CPU and sleep reactions remain disabled until their transitions are ready.
 # No keyboard_device is intentionally configured.
 
 cat_height=112
@@ -20,18 +20,22 @@ enable_debug=0
 fps=60
 
 animation_name=custom
-custom_sprite_sheet_filename=/data/Development/projects/cyber-companion/assets/sprites/companion-wisp-idle-v0.4.png
+custom_sprite_sheet_filename=assets/sprites/companion-wisp-movement-v0.5.png
 custom_idle_frames=6
+custom_start_moving_frames=4
+custom_moving_frames=8
+custom_end_moving_frames=4
+custom_mirror_x_moving=1
 
 # Six deterministic frames, 160 ms each: a restrained 960 ms hover loop.
 idle_animation=1
 animation_speed=160
 idle_sleep_timeout=0
 
-# Freeze world-space position for this visual acceptance pass.
-movement_radius=0
-movement_speed=0
+# Slow autonomous travel near the lower-right corner.
+movement_radius=260
+movement_speed=3
+movement_wait_factor=24.0
 enable_movement_debug=0
 
-# The workstation uses DP-2 on the left and DP-1 on the right.
-monitor=DP-2
+# Monitor selection is supplied by scripts/run-renderer.sh.

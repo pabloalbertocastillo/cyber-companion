@@ -31,3 +31,12 @@ frame in `companion-wisp-idle-v0.4.png`. The build script changes only its
 height around the fixed tail pivot; it never regenerates individual poses.
 This makes v0.4 suitable for judging scale, palette, edge quality and timing,
 while movement and system-event states remain intentionally disabled.
+
+## v0.5 movement acceptance preview
+
+`companion-wisp-movement-v0.5.png` adds `start_moving`, `moving` and
+`end_moving` without regenerating the character. The approved raster rotates
+around one fixed visual center, and adjacent moving-loop frames differ by no
+more than four degrees and four source pixels in height. This version tests
+renderer transitions and autonomous travel before a layered production rig is
+introduced.
