@@ -1,4 +1,4 @@
-# Cyber Companion v0.1
+# Cyber Companion v0.2
 # Autonomous system avatar for Wayland V-Pets.
 # No keyboard_device is intentionally configured.
 
@@ -19,7 +19,7 @@ enable_debug=0
 fps=30
 
 animation_name=custom
-custom_sprite_sheet_filename=/data/Development/projects/cyber-companion/assets/sprites/companion-wisp-v0.1.png
+custom_sprite_sheet_filename=/data/Development/projects/cyber-companion/assets/sprites/companion-wisp-v0.2.png
 
 # Rows 1-9: idle, boring, writing, happy, asleep, sleep,
 # wake up, working and moving.
@@ -35,7 +35,9 @@ custom_moving_frames=2
 custom_mirror_x_moving=1
 
 idle_animation=1
-animation_speed=180
+
+# Small, frequent steps produce smoother movement than v0.1.
+animation_speed=80
 idle_sleep_timeout=300
 
 # System activity: use the working animation above 70% CPU.
@@ -45,8 +47,8 @@ cpu_running_factor=0.35
 
 # Autonomous movement near the lower-right corner.
 movement_radius=260
-movement_speed=8
-movement_wait_factor=5.1
+movement_speed=2
+movement_wait_factor=18.0
 enable_movement_debug=0
 
 # The workstation uses DP-2 on the left and DP-1 on the right.
