@@ -1,47 +1,51 @@
-# Cyber Companion Phase 0 renderer validation
-# Uses the upstream custom Neko sheet only to verify autonomous animation.
+# Cyber Companion v0.1
+# Autonomous system avatar for Wayland V-Pets.
 # No keyboard_device is intentionally configured.
 
-cat_height=96
+cat_height=112
 cat_align=right
 
 # With right alignment, positive values move the sprite left/inward.
-cat_x_offset=48
-cat_y_offset=-8
+cat_x_offset=56
+cat_y_offset=-6
 
-overlay_height=120
+overlay_height=136
 overlay_position=bottom
 overlay_layer=overlay
 overlay_opacity=0
 
-enable_antialiasing=0
+enable_antialiasing=1
 enable_debug=0
 fps=30
 
-# Temporary animated sprite for renderer compatibility testing only.
 animation_name=custom
-custom_sprite_sheet_filename=/data/Development/tools/wayland-vpets/examples/custom-sprite-sheets/neko.png
+custom_sprite_sheet_filename=/data/Development/projects/cyber-companion/assets/sprites/companion-wisp-v0.1.png
+
+# Rows 1-9: idle, boring, writing, happy, asleep, sleep,
+# wake up, working and moving.
 custom_idle_frames=2
 custom_boring_frames=2
 custom_writing_frames=2
 custom_happy_frames=2
 custom_asleep_frames=2
 custom_sleep_frames=2
-custom_wake_up_frames=1
+custom_wake_up_frames=2
 custom_working_frames=2
 custom_moving_frames=2
 custom_mirror_x_moving=1
 
 idle_animation=1
-animation_speed=150
+animation_speed=180
 idle_sleep_timeout=300
 
+# System activity: use the working animation above 70% CPU.
 update_rate=1000
 cpu_threshold=70
 cpu_running_factor=0.35
 
-movement_radius=220
-movement_speed=6
+# Autonomous movement near the lower-right corner.
+movement_radius=260
+movement_speed=8
 movement_wait_factor=5.1
 enable_movement_debug=0
 
