@@ -23,3 +23,11 @@ end_moving/
 The atlas builder will place each sequence on the manifest row and leave unused
 cells fully transparent. Renderer-specific packing must remain a generated step
 so future renderers can reuse the same source animation.
+
+## v0.4 idle acceptance preview
+
+`companion-wisp-master-v0.4.png` is the single canonical raster used for every
+frame in `companion-wisp-idle-v0.4.png`. The build script changes only its
+height around the fixed tail pivot; it never regenerates individual poses.
+This makes v0.4 suitable for judging scale, palette, edge quality and timing,
+while movement and system-event states remain intentionally disabled.
