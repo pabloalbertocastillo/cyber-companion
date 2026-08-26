@@ -26,7 +26,8 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Event-driven architecture
 - [x] Gentoo/Hyprland installation plan
 - [x] Safe Wayland V-Pets configuration without keyboard capture
-- [ ] Validate Wayland V-Pets on the target system
+- [x] Validate Wayland V-Pets on the target system
+- [x] Define the Wisp v1 production sprite contract
 - [ ] Produce the first Wisp sprite sheet
 - [ ] Add MPRIS music reactions
 - [ ] Add libvirt, network, idle and thermal adapters
@@ -45,14 +46,18 @@ The project is in **Phase 0: foundation and compatibility validation**.
 ## Repository layout
 
 ```text
-assets/          Original character concepts and future sprite sheets
+assets/          Character concepts, source manifests and generated atlases
 config/          Example renderer configuration
 docs/            Architecture and Gentoo installation notes
-scripts/         Read-only diagnostics and future runtime helpers
+scripts/         Diagnostics, validation and future runtime helpers
 ```
 
 Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
+
+Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
+The existing v0.3 atlas is an experimental visual prototype, not a production
+asset.
 
 ## Upstream renderer candidate
 

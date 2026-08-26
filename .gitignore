@@ -1,4 +1,6 @@
 .cache/
+__pycache__/
+*.py[cod]
 build/
 *.log
 *.pid

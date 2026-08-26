@@ -1,5 +1,7 @@
-# Cyber Companion v0.3
-# Autonomous system avatar for Wayland V-Pets.
+# Cyber Companion v0.3 prototype
+# Autonomous system avatar for Wayland V-Pets. This configuration exists only
+# to reproduce the rejected v0.3 visual prototype while Wisp v1 is produced
+# against docs/SPRITE_SPEC.md.
 # No keyboard_device is intentionally configured.
 
 cat_height=112
@@ -21,8 +23,9 @@ fps=30
 animation_name=custom
 custom_sprite_sheet_filename=/data/Development/projects/cyber-companion/assets/sprites/companion-wisp-v0.3.png
 
-# Rows 1-9: idle, boring, writing, happy, asleep, sleep,
-# wake up, working and moving. Every frame is center-registered.
+# Experimental rows 1-9: idle, boring, writing, happy, asleep, sleep,
+# wake up, working and moving. These independent poses do not meet the Wisp v1
+# transition and fixed-pivot contract.
 custom_idle_frames=2
 custom_boring_frames=2
 custom_writing_frames=2
