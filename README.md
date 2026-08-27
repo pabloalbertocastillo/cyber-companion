@@ -58,18 +58,19 @@ Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
 
 Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
-The default configuration now runs the v0.5 movement acceptance preview. It
-adds coherent takeoff, horizontal flight and landing rows around the accepted
-idle loop. System reactions remain disabled until their own transition rows
-exist. The v0.3 atlas remains only as a rejected visual prototype.
+The default configuration now runs the v0.6 articulated movement acceptance
+preview. It separates both arms from the approved raster master, eases through
+six-frame takeoff and landing transitions, and displays Wisp at twice the v0.5
+height. System reactions remain disabled until their own transition rows exist.
+The v0.3 atlas remains only as a rejected visual prototype.
 
 Rebuild and validate the preview with:
 
 ```bash
 ./scripts/build-movement-preview.sh
 python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-movement-v0.5.png \
-  assets/source/wisp/manifest-movement-v0.5.json
+  assets/sprites/companion-wisp-movement-v0.6.png \
+  assets/source/wisp/manifest-movement-v0.6.json
 ```
 
 ## Upstream renderer candidate

@@ -40,3 +40,12 @@ around one fixed visual center, and adjacent moving-loop frames differ by no
 more than four degrees and four source pixels in height. This version tests
 renderer transitions and autonomous travel before a layered production rig is
 introduced.
+
+## v0.6 articulated movement acceptance preview
+
+`companion-wisp-movement-v0.6.png` keeps the approved v0.4 raster identity but
+extracts its two disconnected arm components into a minimal deterministic rig.
+Takeoff and landing now use six eased frames; the arms tuck independently while
+the body tilts into flight. The runtime configuration doubles the displayed
+height from 112 to 224 pixels and slows autonomous travel so the horizontal
+state remains visible long enough to evaluate.

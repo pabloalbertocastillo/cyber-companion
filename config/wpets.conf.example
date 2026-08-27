@@ -1,16 +1,16 @@
-# Cyber Companion Wisp v0.5 movement preview
+# Cyber Companion Wisp v0.6 articulated movement preview
 # Idle, takeoff, horizontal flight and landing use one canonical raster master.
 # CPU and sleep reactions remain disabled until their transitions are ready.
 # No keyboard_device is intentionally configured.
 
-cat_height=112
+cat_height=224
 cat_align=right
 
 # With right alignment, positive values move the sprite left/inward.
-cat_x_offset=56
-cat_y_offset=-6
+cat_x_offset=112
+cat_y_offset=-12
 
-overlay_height=136
+overlay_height=256
 overlay_position=bottom
 overlay_layer=overlay
 overlay_opacity=0
@@ -20,22 +20,22 @@ enable_debug=0
 fps=60
 
 animation_name=custom
-custom_sprite_sheet_filename=assets/sprites/companion-wisp-movement-v0.5.png
+custom_sprite_sheet_filename=assets/sprites/companion-wisp-movement-v0.6.png
 custom_idle_frames=6
-custom_start_moving_frames=4
+custom_start_moving_frames=6
 custom_moving_frames=8
-custom_end_moving_frames=4
+custom_end_moving_frames=6
 custom_mirror_x_moving=1
 
-# Six deterministic frames, 160 ms each: a restrained 960 ms hover loop.
+# Six deterministic frames, 180 ms each: a deliberate 1.08 s transition.
 idle_animation=1
-animation_speed=160
+animation_speed=180
 idle_sleep_timeout=0
 
-# Slow autonomous travel near the lower-right corner.
-movement_radius=260
-movement_speed=3
-movement_wait_factor=24.0
+# Slower, longer autonomous travel near the lower-right corner.
+movement_radius=360
+movement_speed=2
+movement_wait_factor=18.0
 enable_movement_debug=0
 
 # Monitor selection is supplied by scripts/run-renderer.sh.
