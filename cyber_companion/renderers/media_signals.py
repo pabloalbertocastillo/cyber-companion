@@ -6,6 +6,8 @@ import os
 import signal
 from collections.abc import Callable, Iterable
 
+from cyber_companion.presentation import PresentationCommand
+
 
 RendererNotifier = Callable[[int, int], None]
 
@@ -28,7 +30,8 @@ class MediaSignalRendererAdapter:
         self.notifier = notifier
         self._current_profile: str | None = None
 
-    def apply(self, profile: str) -> bool:
+    def apply(self, command: PresentationCommand) -> bool:
+        profile = command.profile
         if profile == self._current_profile:
             return False
         if profile not in self.profiles:

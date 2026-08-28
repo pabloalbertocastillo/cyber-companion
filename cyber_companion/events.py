@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
+from threading import RLock
 from typing import Callable, Mapping
 
 
@@ -35,10 +36,15 @@ Subscriber = Callable[[Event], None]
 class EventBus:
     def __init__(self) -> None:
         self._subscribers: list[Subscriber] = []
+        self._lock = RLock()
 
     def subscribe(self, subscriber: Subscriber) -> None:
-        self._subscribers.append(subscriber)
+        with self._lock:
+            self._subscribers.append(subscriber)
 
     def publish(self, event: Event) -> None:
-        for subscriber in tuple(self._subscribers):
-            subscriber(event)
+        # Adapters may publish concurrently. Serialize the complete delivery of
+        # each event so reducers and the behavior director observe a total order.
+        with self._lock:
+            for subscriber in tuple(self._subscribers):
+                subscriber(event)

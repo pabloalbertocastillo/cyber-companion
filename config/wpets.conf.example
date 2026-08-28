@@ -38,10 +38,11 @@ idle_sleep_timeout=0
 happy_kpm=0
 cpu_threshold=0
 
-# Slower, longer autonomous travel near the lower-right corner.
-movement_radius=360
-movement_speed=2
-movement_wait_factor=18.0
+# The behavior director is the only movement authority. Autonomous travel is
+# disabled so the renderer cannot rotate or move Wisp independently.
+movement_radius=0
+movement_speed=0
+movement_wait_factor=0
 enable_movement_debug=0
 
 # Monitor selection is supplied by scripts/run-renderer.sh.

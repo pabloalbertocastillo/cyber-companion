@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "default": {
+    "profile": "idle",
+    "behavior": "system_presence",
+    "intensity": 0.25,
+    "transition": "smooth"
+  },
+  "behaviors": [
+    {
+      "name": "media_playing",
+      "priority": 40,
+      "when": {
+        "path": "domains.media.status",
+        "equals": "playing"
+      },
+      "command": {
+        "profile": "media",
+        "behavior": "music_sway",
+        "intensity": 0.65,
+        "transition": "smooth"
+      }
+    }
+  ]
+}

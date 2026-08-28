@@ -6,6 +6,10 @@ of a Gentoo Linux + Hyprland desktop.
 The project starts as a lightweight desktop companion and is intentionally
 designed to evolve into a visible interface for a local or remote AI system.
 
+The v0.10 behavior core separates system adapters, normalized events, domain
+state, declarative behavior policy and renderer commands. Wayland V-Pets is the
+first renderer backend, not the owner of Wisp's behavior.
+
 ![Cyber Companion concept](assets/concept/companion-concept-v1.webp)
 
 ## Manifestations
@@ -35,6 +39,8 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [ ] Replace the compiled atlas adapter with live rig composition
 - [x] Add the MPRIS event bus for all compatible media players
 - [x] Add native play/pause renderer state without configuration reloads
+- [x] Add a declarative, priority-based behavior director
+- [x] Disable renderer-owned autonomous travel
 - [ ] Add libvirt, network, idle and thermal adapters
 - [ ] Add an AI adapter
 
@@ -110,7 +116,7 @@ CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
 
 Pause and resume any MPRIS player while the launcher runs. Detailed behavior
 and runtime paths are documented in
-[System integration v0.9](docs/SYSTEM_INTEGRATION.md).
+[System integration v0.10](docs/SYSTEM_INTEGRATION.md).
 
 ## Licensing
 

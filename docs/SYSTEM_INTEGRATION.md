@@ -1,12 +1,13 @@
-# System integration v0.9
+# System integration v0.10
 
-v0.9 is the first native end-to-end system connection. It listens to every available
+v0.10 retains the first native end-to-end system connection. It listens to every available
 MPRIS source, normalizes media events and selects a presentation profile without
 granting the renderer access to D-Bus.
 
 ```text
 Spotify, browsers, VLC, mpv ... -> MPRIS -> playerctl --all-players --follow
-                                             -> event bus -> state store
+                                             -> event bus -> domain state
+                                                          -> behavior director
                                                           -> native media signal
 ```
 
@@ -17,6 +18,10 @@ Spotify, browsers, VLC, mpv ... -> MPRIS -> playerctl --all-players --follow
 | Any player playing | `media` | Activation, upright arm dance, then a continuous rhythmic loop |
 | Paused, stopped or absent | `idle` | Deactivation and exact return to calm breathing |
 | Track changed | unchanged | Metadata is updated without restarting the animation |
+
+Behavior selection is configured in `config/behaviors.json`. MPRIS only emits
+normalized events; it never selects renderer signals or animation rows. The
+behavior director is the single presentation authority.
 
 The controller writes only to:
 
@@ -31,13 +36,15 @@ an independent `media_active` state and trigger the existing
 `StartWorking → Working → EndWorking` animation path.
 
 This avoids resetting the whole animation state machine on each play/pause
-event. It also leaves CPU state independent for a future system-load reaction.
+event. Autonomous renderer travel is disabled with `movement_radius=0` and
+`movement_speed=0`, so it cannot compete with director-owned behavior. CPU state
+remains independent for a future system-load reaction.
 
 This milestone covers applications that implement MPRIS. Browser media such as
 YouTube normally participates through the browser's MPRIS integration, as do
 Spotify, VLC and suitably configured mpv. Raw PipeWire audio streams from games
 or applications without MPRIS will require a separate audio-activity adapter;
-they are intentionally not inferred from volume alone in v0.9.
+they are intentionally not inferred from volume alone in v0.10.
 
 ## Interactive test
 

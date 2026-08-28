@@ -1,11 +1,5 @@
 {
   "version": 1,
-  "default_profile": "idle",
-  "event_profiles": {
-    "media.playing": "media",
-    "media.paused": "idle",
-    "media.stopped": "idle"
-  },
   "profiles": {
     "idle": {},
     "media": {}

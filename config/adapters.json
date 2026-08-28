@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "adapters": [
+    {
+      "name": "desktop_media",
+      "type": "mpris",
+      "enabled": true,
+      "settings": {
+        "executable": "playerctl"
+      }
+    }
+  ]
+}

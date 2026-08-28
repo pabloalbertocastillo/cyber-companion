@@ -61,7 +61,9 @@ if ! kill -0 "$renderer_pid" 2>/dev/null; then
 fi
 
 python3 -m cyber_companion.controller \
+    --adapters "$repo_root/config/adapters.json" \
     --profiles "$repo_root/config/system-profiles.json" \
+    --behaviors "$repo_root/config/behaviors.json" \
     --state-file "$runtime_state" \
     --renderer-pid "$renderer_pid" &
 controller_pid=$!

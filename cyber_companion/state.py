@@ -3,29 +3,23 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from pathlib import Path
 
 from cyber_companion.events import Event
+from cyber_companion.presentation import PresentationCommand
 from cyber_companion.runtime import atomic_write_text
-
-
-PresentationSubscriber = Callable[[str], None]
 
 
 class StateStore:
     def __init__(
         self,
         state_path: Path,
-        default_profile: str,
-        event_profiles: Mapping[str, str],
-        on_presentation: PresentationSubscriber,
+        initial_presentation: PresentationCommand,
     ) -> None:
         self.state_path = state_path
-        self.default_profile = default_profile
-        self.event_profiles = dict(event_profiles)
-        self.on_presentation = on_presentation
-        self.profile = default_profile
+        self.presentation = initial_presentation
+        self.domains: dict[str, dict[str, object]] = {}
         self.media: dict[str, object] = {
             "player": None,
             "status": "stopped",
@@ -35,29 +29,31 @@ class StateStore:
         }
         self.last_event: dict[str, object] | None = None
 
-    def initialize(self, publish_presentation: bool = True) -> None:
+    def initialize(self) -> None:
         self._persist()
-        if publish_presentation:
-            self.on_presentation(self.profile)
 
     def handle(self, event: Event) -> None:
-        previous_profile = self.profile
-        if event.source == "mpris" and event.type.startswith("media."):
+        domain = event.type.partition(".")[0]
+        self.domains.setdefault(domain, {}).update(event.data)
+        if domain == "media":
             self.media.update(event.data)
-
-        selected_profile = self.event_profiles.get(event.type)
-        if selected_profile is not None:
-            self.profile = selected_profile
-
         self.last_event = event.as_dict()
         self._persist()
-        if self.profile != previous_profile:
-            self.on_presentation(self.profile)
+
+    def set_presentation(self, presentation: PresentationCommand) -> None:
+        if presentation == self.presentation:
+            return
+        self.presentation = presentation
+        self._persist()
+
+    def behavior_state(self) -> dict[str, object]:
+        return {"domains": {name: dict(value) for name, value in self.domains.items()}}
 
     def snapshot(self) -> dict[str, object]:
         return {
             "version": 1,
-            "presentation": {"profile": self.profile},
+            "presentation": self.presentation.as_dict(),
+            "domains": {name: dict(value) for name, value in self.domains.items()},
             "media": dict(self.media),
             "last_event": self.last_event,
         }
