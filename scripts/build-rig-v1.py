@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import math
+import argparse
 import shutil
 import subprocess
 import sys
@@ -13,10 +14,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 RIG_DIR = REPO_ROOT / "assets/source/wisp/rig-v1"
-RIG_FILE = RIG_DIR / "rig.json"
-BUILD_DIR = REPO_ROOT / "build/rig-v1"
-ATLAS = REPO_ROOT / "assets/sprites/companion-wisp-movement-v0.7.png"
-PREVIEW = REPO_ROOT / "assets/previews/companion-wisp-movement-v0.7.gif"
 
 
 def image_tool() -> str:
@@ -174,18 +171,37 @@ def render_frame(tool: str, rig: dict, clip: dict, index: int, output: Path) -> 
 
 
 def main() -> int:
-    rig = json.loads(RIG_FILE.read_text(encoding="utf-8"))
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--system",
+        action="store_true",
+        help="build the v0.9 system-media atlas instead of the v0.7 movement atlas",
+    )
+    args = parser.parse_args()
+
+    if args.system:
+        rig_file = RIG_DIR / "rig-system-v0.9.json"
+        build_dir = REPO_ROOT / "build/rig-system-v0.9"
+        atlas = REPO_ROOT / "assets/sprites/companion-wisp-system-v0.9.png"
+        preview = REPO_ROOT / "assets/previews/companion-wisp-system-v0.9.gif"
+    else:
+        rig_file = RIG_DIR / "rig.json"
+        build_dir = REPO_ROOT / "build/rig-v1"
+        atlas = REPO_ROOT / "assets/sprites/companion-wisp-movement-v0.7.png"
+        preview = REPO_ROOT / "assets/previews/companion-wisp-movement-v0.7.gif"
+
+    rig = json.loads(rig_file.read_text(encoding="utf-8"))
     tool = image_tool()
-    BUILD_DIR.mkdir(parents=True, exist_ok=True)
-    ATLAS.parent.mkdir(parents=True, exist_ok=True)
-    PREVIEW.parent.mkdir(parents=True, exist_ok=True)
+    build_dir.mkdir(parents=True, exist_ok=True)
+    atlas.parent.mkdir(parents=True, exist_ok=True)
+    preview.parent.mkdir(parents=True, exist_ok=True)
 
     rows: list[Path] = []
     rendered: dict[str, list[Path]] = {}
     expected_columns = max(int(clip["frames"]) for clip in rig["clips"])
 
     for clip in rig["clips"]:
-        clip_dir = BUILD_DIR / clip["name"]
+        clip_dir = build_dir / clip["name"]
         clip_dir.mkdir(parents=True, exist_ok=True)
         frames: list[Path] = []
         for index in range(int(clip["frames"])):
@@ -196,23 +212,25 @@ def main() -> int:
 
         if len(frames) != expected_columns:
             raise SystemExit("Rig v1 requires equal frame counts in this acceptance atlas.")
-        row = BUILD_DIR / f"row-{clip['name']}.png"
+        row = build_dir / f"row-{clip['name']}.png"
         run(tool, *frames, "+append", f"PNG32:{row}")
         rows.append(row)
 
-    run(tool, *rows, "-append", "-strip", f"PNG32:{ATLAS}")
+    run(tool, *rows, "-append", "-strip", f"PNG32:{atlas}")
 
     preview_command: list[str | Path] = [tool]
-    preview_sequence = ["idle", "start_moving", "moving", "moving", "end_moving", "idle"]
+    preview_sequence = rig.get(
+        "preview_sequence", ["idle", "start_moving", "moving", "moving", "end_moving", "idle"]
+    )
     clips = {clip["name"]: clip for clip in rig["clips"]}
     for name in preview_sequence:
         delay = max(1, round((int(clips[name]["duration_ms"]) / int(clips[name]["frames"])) / 10))
         preview_command.extend(["-delay", str(delay), *rendered[name]])
-    preview_command.extend(["-dispose", "background", "-loop", "0", PREVIEW])
+    preview_command.extend(["-dispose", "background", "-loop", "0", preview])
     run(*preview_command)
 
-    print(f"Built: {ATLAS}")
-    print(f"Built: {PREVIEW}")
+    print(f"Built: {atlas}")
+    print(f"Built: {preview}")
     return 0
 
 

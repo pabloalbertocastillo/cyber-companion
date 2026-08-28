@@ -1,4 +1,4 @@
-"""Cyber Companion v0.8 event controller."""
+"""Cyber Companion v0.9 event controller."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from pathlib import Path
 
 from cyber_companion.adapters.mpris import PlayerctlMprisAdapter
 from cyber_companion.events import Event, EventBus
-from cyber_companion.renderers.wpets import WpetsRendererAdapter
+from cyber_companion.renderers.media_signals import MediaSignalRendererAdapter
 from cyber_companion.state import StateStore
 
 
@@ -45,8 +45,6 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Connect Cyber Companion to normalized system events")
     parser.add_argument("--playerctl", default="playerctl", help="playerctl executable")
     parser.add_argument("--profiles", required=True, type=Path)
-    parser.add_argument("--base-config", required=True, type=Path)
-    parser.add_argument("--runtime-config", required=True, type=Path)
     parser.add_argument("--state-file", required=True, type=Path)
     parser.add_argument("--renderer-pid", required=True, type=int)
     return parser.parse_args(argv)
@@ -56,11 +54,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     default_profile, event_profiles, profiles = load_profiles(args.profiles)
 
-    renderer = WpetsRendererAdapter(
-        base_config_path=args.base_config,
-        runtime_config_path=args.runtime_config,
-        profiles=profiles,
+    renderer = MediaSignalRendererAdapter(
         renderer_pid=args.renderer_pid,
+        profiles=profiles,
     )
     state = StateStore(
         state_path=args.state_file,
@@ -86,8 +82,8 @@ def main(argv: list[str] | None = None) -> int:
     signal.signal(signal.SIGINT, request_stop)
     signal.signal(signal.SIGTERM, request_stop)
 
-    # run-system.sh has already installed the default idle configuration. Avoid
-    # an unnecessary reload immediately before the first real media event.
+    # The renderer starts in Idle. The first normalized media event establishes
+    # the live state without rewriting or reloading its configuration.
     state.initialize(publish_presentation=False)
     print(f"Cyber Companion controller: media=all-mpris state={args.state_file}", flush=True)
     adapter.run(bus, stop_event)

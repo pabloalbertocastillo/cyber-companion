@@ -10,7 +10,7 @@ from cyber_companion.adapters.mpris import (
     parse_playerctl_line,
 )
 from cyber_companion.events import Event
-from cyber_companion.renderers.wpets import WpetsRendererAdapter, render_config
+from cyber_companion.renderers.media_signals import MediaSignalRendererAdapter
 from cyber_companion.state import StateStore
 
 
@@ -81,38 +81,21 @@ class StateAndRendererTests(unittest.TestCase):
             self.assertEqual(persisted["presentation"]["profile"], "media")
             self.assertEqual(persisted["media"]["title"], "Example Track")
 
-    def test_render_config_replaces_only_known_values(self) -> None:
-        base = "# comment\nanimation_speed=42\nmovement_wait_factor=18.0\n"
-        rendered = render_config(base, {"animation_speed": 34, "movement_wait_factor": 3.0})
-        self.assertEqual(rendered, "# comment\nanimation_speed=34\nmovement_wait_factor=3.0\n")
+    def test_renderer_sends_native_media_signals_once_per_profile(self) -> None:
+        notified: list[tuple[int, int]] = []
+        renderer = MediaSignalRendererAdapter(
+            renderer_pid=123,
+            profiles={"idle", "media"},
+            notifier=lambda process_id, signal_number: notified.append((process_id, signal_number)),
+        )
 
-    def test_render_config_rejects_unknown_keys(self) -> None:
-        with self.assertRaises(ValueError):
-            render_config("animation_speed=42\n", {"missing": 1})
-
-    def test_renderer_notifies_once_per_profile(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            base = root / "base.conf"
-            runtime = root / "runtime.conf"
-            base.write_text("animation_speed=42\nmovement_wait_factor=18.0\n", encoding="utf-8")
-            notified: list[int] = []
-            renderer = WpetsRendererAdapter(
-                base_config_path=base,
-                runtime_config_path=runtime,
-                profiles={
-                    "idle": {"wpets": {"animation_speed": 42, "movement_wait_factor": 18.0}},
-                    "media": {"wpets": {"animation_speed": 34, "movement_wait_factor": 3.0}},
-                },
-                renderer_pid=123,
-                notifier=notified.append,
-            )
-
-            self.assertTrue(renderer.apply("idle"))
-            self.assertFalse(renderer.apply("idle"))
-            self.assertTrue(renderer.apply("media"))
-            self.assertEqual(notified, [123, 123])
-            self.assertIn("animation_speed=34", runtime.read_text(encoding="utf-8"))
+        self.assertTrue(renderer.apply("idle"))
+        self.assertFalse(renderer.apply("idle"))
+        self.assertTrue(renderer.apply("media"))
+        self.assertEqual(len(notified), 2)
+        self.assertEqual(notified[0][0], 123)
+        self.assertEqual(notified[1][0], 123)
+        self.assertEqual(notified[1][1], notified[0][1] - 1)
 
     def test_reconciliation_removes_closed_playing_player(self) -> None:
         mapper = MprisEventMapper()

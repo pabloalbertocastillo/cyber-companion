@@ -33,7 +33,8 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Produce Wisp Rig v1 with independently animated arms
 - [x] Correct Wayland ARGB premultiplied-alpha composition
 - [ ] Replace the compiled atlas adapter with live rig composition
-- [x] Add the v0.8 MPRIS event bus and music activity profiles
+- [x] Add the MPRIS event bus for all compatible media players
+- [x] Add native play/pause renderer state without configuration reloads
 - [ ] Add libvirt, network, idle and thermal adapters
 - [ ] Add an AI adapter
 
@@ -60,23 +61,25 @@ Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
 
 Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
-The default configuration now runs the v0.7 Rig v1 acceptance preview. Its
+The default configuration now runs the v0.9 Rig v1 system preview. Its
 three-layer source rig separates the body and both arms, stores pivots and
-keyframes in JSON, and compiles four 24-frame clips with smooth interpolation.
-The renderer build applies a versioned premultiplied-alpha patch required by
-Wayland ARGB8888, while the sprite retains the doubled 224 px display height.
-System reactions remain disabled until their transitions exist. The v0.3 atlas
-remains only as a rejected visual prototype.
+keyframes in JSON, and compiles seven 24-frame clips with smooth interpolation.
+The media sequence activates, dances upright with broad arm motion, and returns
+to the exact idle pose. The renderer build applies versioned alpha and native
+media-state patches, while the sprite retains the doubled 224 px display
+height. The v0.3 atlas remains only as a rejected visual prototype.
 
 Rebuild and validate the preview with:
 
 ```bash
 ./scripts/build-rig-v1.py
+./scripts/build-rig-v1.py --system
 python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-movement-v0.7.png \
-  assets/source/wisp/manifest-movement-v0.7.json
+  assets/sprites/companion-wisp-system-v0.9.png \
+  assets/source/wisp/manifest-system-v0.9.json
 
 ./scripts/test-renderer-alpha.sh
+./scripts/test-renderer-media.sh
 ```
 
 ## Upstream renderer candidate
@@ -85,7 +88,7 @@ Phase 0 evaluates [Wayland V-Pets](https://github.com/furudbat/wayland-vpets),
 an MIT-licensed Wayland overlay that explicitly documents Hyprland,
 multi-monitor support and runtime custom PNG sprite sheets. Cyber Companion does
 not vendor or redistribute the upstream project. The reproducible build applies
-one narrow local patch recorded in `UPSTREAM.lock`; it never silently switches
+two narrow local patches recorded in `UPSTREAM.lock`; it never silently switches
 upstream revisions.
 
 The renderer remains an adapter, not the core architecture. If it cannot expose
@@ -94,11 +97,11 @@ without redesigning the character or event model.
 
 ## Live system connection
 
-The v0.8 controller listens to every MPRIS-compatible media source through
+The controller listens to every MPRIS-compatible media source through
 `playerctl --all-players --follow`, emits normalized events and switches
-Wayland V-Pets between calm and media activity profiles. Spotify, browser media,
-VLC and mpv share the same adapter. It writes only private runtime files and
-requires neither root nor keyboard access.
+Wayland V-Pets between calm and media activity through native renderer signals.
+Spotify, browser media, VLC and mpv share the same adapter. It writes only a
+private state snapshot and requires neither root nor keyboard access.
 
 ```bash
 CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
@@ -106,7 +109,7 @@ CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
 
 Pause and resume any MPRIS player while the launcher runs. Detailed behavior
 and runtime paths are documented in
-[System integration v0.8](docs/SYSTEM_INTEGRATION.md).
+[System integration v0.9](docs/SYSTEM_INTEGRATION.md).
 
 ## Licensing
 

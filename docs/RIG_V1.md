@@ -14,11 +14,15 @@ coordinates remain identical and no registration metadata is lost.
 
 ## Animation contract
 
-`assets/source/wisp/rig-v1/rig.json` defines four clips:
+`assets/source/wisp/rig-v1/rig.json` defines the original movement clips.
+`rig-system-v0.9.json` adds three explicit system-media clips before them:
 
 | Clip | Frames | Nominal duration | Playback |
 |---|---:|---:|---|
 | `idle` | 24 | 1008 ms | loop |
+| `start_working` | 24 | 1008 ms | once |
+| `working` | 24 | 1008 ms | loop |
+| `end_working` | 24 | 1008 ms | once |
 | `start_moving` | 24 | 1000 ms | once |
 | `moving` | 24 | 960 ms | loop |
 | `end_moving` | 24 | 1000 ms | once |
@@ -30,25 +34,30 @@ one-shot clips include both endpoints so adjacent state boundaries match.
 ## Current adapter
 
 Wayland V-Pets still receives a generated sprite sheet. This is an adapter
-limitation, not the source format. The atlas is 24 columns × 4 rows with
+limitation, not the source format. The system atlas is 24 columns × 7 rows with
 256×192 cells. Runtime playback uses 42 ms per frame, approximately 24 FPS.
 
-The build applies `renderer/patches/0001-premultiplied-alpha.patch` to the
-pinned upstream commit. Wayland `WL_SHM_FORMAT_ARGB8888` requires premultiplied
-alpha; preserving destination alpha prevents translucent edges from becoming
-opaque dark pixels over light wallpapers.
+The build applies two narrow patches to the pinned upstream commit. The first
+corrects premultiplied alpha. The second provides native play/stop signals and
+an independent media state, avoiding configuration reloads.
 
 ## Rebuild and verify
 
 ```bash
 ./scripts/build-rig-v1.py
+./scripts/build-rig-v1.py --system
 
 python3 scripts/validate-sprite.py \
   assets/sprites/companion-wisp-movement-v0.7.png \
   assets/source/wisp/manifest-movement-v0.7.json
 
+python3 scripts/validate-sprite.py \
+  assets/sprites/companion-wisp-system-v0.9.png \
+  assets/source/wisp/manifest-system-v0.9.json
+
 ./scripts/build-renderer.sh
 ./scripts/test-renderer-alpha.sh
+./scripts/test-renderer-media.sh
 ```
 
 The next renderer adapter may evaluate these transforms live. It must preserve

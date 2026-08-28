@@ -1,0 +1,204 @@
+diff --git a/include/graphics/animation.h b/include/graphics/animation.h
+index 7bbb665..11c908b 100644
+--- a/include/graphics/animation.h
++++ b/include/graphics/animation.h
+@@ -24,6 +24,7 @@ enum class trigger_animation_cause_mask_t : uint64_t {
+   Timeout = (1u << 5u),
+   EvolutionUpdate = (1u << 6u),
+   StartEvolution = (1u << 7u),
++  MediaUpdate = (1u << 8u),
+ };
+ 
+ // =============================================================================
+@@ -68,4 +69,4 @@ extern const char __start_assets_sprite_settings[];
+ extern const char __stop_assets_sprite_settings[];
+ }
+ 
+-#endif  // BONGOCAT_ANIMATION_H
+\ No newline at end of file
++#endif  // BONGOCAT_ANIMATION_H
+diff --git a/include/platform/update_shared_memory.h b/include/platform/update_shared_memory.h
+index 566b7c8..10c4b5d 100644
+--- a/include/platform/update_shared_memory.h
++++ b/include/platform/update_shared_memory.h
+@@ -34,6 +34,7 @@ struct update_shared_memory_t {
+   double last_avg_cpu_usage{0};
+   double last_max_cpu_usage{0};
+   bool cpu_active{false};
++  bool media_active{false};
+ 
+   struct timespec program_start_time{};
+   time_sec_t uptime_sec{0};
+@@ -41,4 +42,4 @@ struct update_shared_memory_t {
+ };
+ }  // namespace bongocat::platform::update
+ 
+-#endif  // BONGOCAT_INPUT_CONTEXT_H
+\ No newline at end of file
++#endif  // BONGOCAT_INPUT_CONTEXT_H
+diff --git a/src/core/main.cpp b/src/core/main.cpp
+index 598378d..f72352b 100644
+--- a/src/core/main.cpp
++++ b/src/core/main.cpp
+@@ -727,6 +727,8 @@ static bongocat_error_t signal_setup_handlers(main_context_t& ctx) {
+   sigaddset(&mask, SIGCHLD);
+   sigaddset(&mask, SIGUSR1);
+   sigaddset(&mask, SIGUSR2);
++  sigaddset(&mask, SIGRTMIN);
++  sigaddset(&mask, SIGRTMIN + 1);
+   sigaddset(&mask, SIGQUIT);
+   sigaddset(&mask, SIGHUP);
+ 
+@@ -1172,4 +1174,4 @@ int main(int argc, char *argv[]) {
+   BONGOCAT_UNREACHABLE();
+   // Never reached
+   // return EXIT_SUCCESS;
+-}
+\ No newline at end of file
++}
+diff --git a/src/graphics/animation.cpp b/src/graphics/animation.cpp
+index ae3faed..01e048d 100644
+--- a/src/graphics/animation.cpp
++++ b/src/graphics/animation.cpp
+@@ -249,8 +249,10 @@ static anim_conditions_t get_anim_conditions([[maybe_unused]] const animation_th
+   }();
+ 
+   const bool process_working_animation = [&] {
+-    if (current_config.cpu_running_factor < 1.0 && current_config.cpu_threshold > 0 &&
+-        current_config.update_rate_ms > 0) {
++    const bool media_update =
++        has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::MediaUpdate) || update_shm.media_active;
++    if (media_update || (current_config.cpu_running_factor < 1.0 && current_config.cpu_threshold > 0 &&
++                         current_config.update_rate_ms > 0)) {
+       // by animation_speed
+       if (current_config.animation_speed_ms > 0) {
+         return current_state.frame_delta_ms_counter > current_config.animation_speed_ms;
+@@ -4767,7 +4769,7 @@ static anim_next_frame_result_t anim_custom_idle_next_frame(animation_context_t&
+   case animation_state_row_t::Working:
+     if (current_frames.feature_working) {
+       if (conditions.go_next_frame) {
+-        if (update_shm.cpu_active) {
++        if (update_shm.cpu_active || update_shm.media_active) {
+           anim_custom_process_animation(new_animation_result, new_state, current_state, current_frames);
+         } else {
+           anim_custom_start_or_process_animation(ctx, animation_state_row_t::EndWorking, animation_state_row_t::Idle,
+@@ -5372,20 +5374,24 @@ static anim_next_frame_result_t anim_custom_working_next_frame(animation_thread_
+ 
+   const auto conditions =
+       get_anim_conditions(ctx, input, upd, current_state, anim_shm.evolution, trigger, current_config);
++  const bool working_active = update_shm.cpu_active || update_shm.media_active;
+ 
+   /// @TODO: use state machine for animation (states)
+ 
+   if (current_frames.feature_working) {
+     if (conditions.process_working_animation) {
+       // toggle frame, show attack animation
+-      const bool start_above_threshold = current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
+-                                         update_shm.avg_cpu_usage >= current_config.cpu_threshold;
+-      const bool above_threshold = current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
+-                                   (update_shm.avg_cpu_usage >= current_config.cpu_threshold ||
+-                                    update_shm.max_cpu_usage >= current_config.cpu_threshold);
+-      const bool lower_threshold = current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
+-                                   (update_shm.avg_cpu_usage < current_config.cpu_threshold &&
+-                                    update_shm.max_cpu_usage < current_config.cpu_threshold);
++      const bool start_above_threshold =
++          update_shm.media_active || (current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
++                                      update_shm.avg_cpu_usage >= current_config.cpu_threshold);
++      const bool above_threshold =
++          update_shm.media_active || (current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
++                                      (update_shm.avg_cpu_usage >= current_config.cpu_threshold ||
++                                       update_shm.max_cpu_usage >= current_config.cpu_threshold));
++      const bool lower_threshold =
++          !update_shm.media_active && current_config.cpu_threshold >= platform::ENABLED_MIN_CPU_PERCENT &&
++          (update_shm.avg_cpu_usage < current_config.cpu_threshold &&
++           update_shm.max_cpu_usage < current_config.cpu_threshold);
+       if (start_above_threshold && conditions.is_idle_sleep && conditions.ready_to_work) {
+         // wake up from working
+         anim_custom_process_animation_result_t animation_result{.row_state = current_state.row_state};
+@@ -5411,17 +5417,17 @@ static anim_next_frame_result_t anim_custom_working_next_frame(animation_thread_
+         BONGOCAT_LOG_VERBOSE("Start Working: %d %d; %d%%", above_threshold, lower_threshold, update_shm.avg_cpu_usage);
+       } else if (above_threshold) {
+         if (conditions.is_working) {
+-          if (update_shm.cpu_active && current_state.row_state == animation_state_row_t::StartWorking) {
++          if (working_active && current_state.row_state == animation_state_row_t::StartWorking) {
+             anim_custom_start_or_process_animation(ctx, animation_state_row_t::Working,
+                                                    animation_state_row_t::EndWorking, new_animation_result, new_state,
+                                                    current_state, current_frames, current_config);
+-          } else if (!update_shm.cpu_active && (current_state.row_state == animation_state_row_t::StartWorking ||
+-                                                state.row_state == animation_state_row_t::Working)) {
++          } else if (!working_active && (current_state.row_state == animation_state_row_t::StartWorking ||
++                                         state.row_state == animation_state_row_t::Working)) {
+             // end working, cool down
+             anim_custom_start_or_process_animation(ctx, animation_state_row_t::EndWorking, animation_state_row_t::Idle,
+                                                    new_animation_result, new_state, current_state, current_frames,
+                                                    current_config);
+-          } else if (!update_shm.cpu_active && current_state.row_state == animation_state_row_t::EndWorking) {
++          } else if (!working_active && current_state.row_state == animation_state_row_t::EndWorking) {
+             // back to idle
+             anim_custom_start_or_process_animation(ctx, animation_state_row_t::Idle, new_animation_result, new_state,
+                                                    current_state, current_frames, current_config);
+@@ -5442,9 +5448,9 @@ static anim_next_frame_result_t anim_custom_working_next_frame(animation_thread_
+       } else {
+         // Cancel Working
+         if (conditions.is_working && current_state.row_state != animation_state_row_t::EndMoving &&
+-            !update_shm.cpu_active) {
++            !working_active) {
+           // back to idle
+-          anim_custom_start_or_process_animation(ctx, animation_state_row_t::EndMoving, animation_state_row_t::Idle,
++          anim_custom_start_or_process_animation(ctx, animation_state_row_t::EndWorking, animation_state_row_t::Idle,
+                                                  new_animation_result, new_state, current_state, current_frames,
+                                                  current_config);
+           BONGOCAT_LOG_VERBOSE("Stop Working: %d %d; %d%%", above_threshold, lower_threshold, update_shm.avg_cpu_usage);
+@@ -5453,7 +5459,7 @@ static anim_next_frame_result_t anim_custom_working_next_frame(animation_thread_
+     }
+   } else {
+     // Cancel Working
+-    if (conditions.is_working && !update_shm.cpu_active) {
++    if (conditions.is_working && !working_active) {
+       // back to idle
+       anim_custom_start_or_process_animation(ctx, animation_state_row_t::Idle, new_animation_result, new_state,
+                                              current_state, current_frames, current_config);
+@@ -5769,7 +5775,8 @@ static anim_handle_key_press_result_t anim_handle_animation_trigger(animation_co
+ 
+   anim_next_frame_result_t update_frame_result{};
+ 
+-  if (has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::CpuUpdate)) {
++  if (has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::CpuUpdate) ||
++      has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::MediaUpdate)) {
+     // handle working animation
+     switch (anim_shm.anim_type) {
+     case config::config_animation_sprite_sheet_layout_t::None:
+@@ -6494,6 +6501,9 @@ static void *anim_thread(void *arg) {
+           case trigger_animation_cause_mask_t::StartEvolution:
+             triggered_anim_cause = flag_add(triggered_anim_cause, cause);
+             break;
++          case trigger_animation_cause_mask_t::MediaUpdate:
++            triggered_anim_cause = flag_add(triggered_anim_cause, cause);
++            break;
+           }
+         }
+         if (rc < 0) {
+diff --git a/src/platform/wayland.cpp b/src/platform/wayland.cpp
+index c108110..fe172e2 100644
+--- a/src/platform/wayland.cpp
++++ b/src/platform/wayland.cpp
+@@ -247,7 +247,17 @@ bongocat_error_t run(wayland_context_t& ctx, volatile sig_atomic_t& running, int
+         if (s != sizeof(fdsi)) {
+           BONGOCAT_LOG_ERROR("Failed to read signal fd");
+         } else {
+-          switch (fdsi.ssi_signo) {
++          if (fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN) ||
++              fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN + 1)) {
++            const bool media_active = fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN);
++            auto& update_ctx = *animation_ctx._update;
++            {
++              platform::LockGuard guard(update_ctx.update_lock);
++              update_ctx.shm->media_active = media_active;
++            }
++            BONGOCAT_LOG_INFO("Media playback %s", media_active ? "started" : "stopped");
++            animation::trigger(animation_ctx, animation::trigger_animation_cause_mask_t::MediaUpdate);
++          } else switch (fdsi.ssi_signo) {
+           case SIGINT:
+           case SIGTERM:
+           case SIGQUIT:  // Handle Ctrl+\ for graceful shutdown
+

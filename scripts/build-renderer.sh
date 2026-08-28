@@ -11,6 +11,7 @@ data_dir=${XDG_DATA_HOME:-"$HOME/.local/share"}
 source_dir=${CYBER_COMPANION_UPSTREAM_SOURCE:-"$data_dir/cyber-companion/wayland-vpets"}
 build_dir=$source_dir/build-cyber-companion
 alpha_patch=$repo_root/$CYBER_COMPANION_PATCH
+media_patch=$repo_root/$CYBER_COMPANION_MEDIA_PATCH
 
 if [ ! -e "$source_dir" ]; then
     mkdir -p "$(dirname -- "$source_dir")"
@@ -28,16 +29,22 @@ if [ "$configured_remote" != "$repository" ]; then
     exit 1
 fi
 
-if [ ! -f "$alpha_patch" ]; then
-    printf 'Missing renderer patch: %s\n' "$alpha_patch" >&2
-    exit 1
-fi
+verify_patch() {
+    patch_file=$1
+    expected_sha256=$2
+    if [ ! -f "$patch_file" ]; then
+        printf 'Missing renderer patch: %s\n' "$patch_file" >&2
+        exit 1
+    fi
+    actual_patch_sha256=$(sha256sum "$patch_file" | awk '{print $1}')
+    if [ "$actual_patch_sha256" != "$expected_sha256" ]; then
+        printf 'Renderer patch checksum mismatch: %s\n' "$patch_file" >&2
+        exit 1
+    fi
+}
 
-actual_patch_sha256=$(sha256sum "$alpha_patch" | awk '{print $1}')
-if [ "$actual_patch_sha256" != "$CYBER_COMPANION_PATCH_SHA256" ]; then
-    printf 'Renderer patch checksum mismatch: %s\n' "$alpha_patch" >&2
-    exit 1
-fi
+verify_patch "$alpha_patch" "$CYBER_COMPANION_PATCH_SHA256"
+verify_patch "$media_patch" "$CYBER_COMPANION_MEDIA_PATCH_SHA256"
 
 current_commit=$(git -C "$source_dir" rev-parse HEAD)
 if [ "$current_commit" != "$commit" ]; then
@@ -49,18 +56,31 @@ if [ "$current_commit" != "$commit" ]; then
     git -C "$source_dir" checkout --detach "$commit"
 fi
 
-if git -C "$source_dir" apply --check "$alpha_patch"; then
-    git -C "$source_dir" apply "$alpha_patch"
-elif git -C "$source_dir" apply --reverse --check "$alpha_patch"; then
-    printf 'Renderer alpha patch is already applied.\n'
-else
-    printf 'Upstream worktree contains changes outside the expected renderer patch: %s\n' "$source_dir" >&2
-    exit 1
-fi
+apply_patch_once() {
+    patch_file=$1
+    patch_name=$2
+    if git -C "$source_dir" apply --check "$patch_file"; then
+        git -C "$source_dir" apply "$patch_file"
+    elif git -C "$source_dir" apply --reverse --check "$patch_file"; then
+        printf 'Renderer %s patch is already applied.\n' "$patch_name"
+    else
+        printf 'Upstream worktree conflicts with the %s patch: %s\n' "$patch_name" "$source_dir" >&2
+        exit 1
+    fi
+}
+
+apply_patch_once "$alpha_patch" "alpha"
+apply_patch_once "$media_patch" "media-signal"
 
 worktree_status=$(git -C "$source_dir" status --porcelain --untracked-files=no)
-if [ "$worktree_status" != " M src/graphics/drawing_images.cpp" ]; then
-    printf 'Upstream worktree differs from the one expected patched file:\n%s\n' "$worktree_status" >&2
+expected_status=' M include/graphics/animation.h
+ M include/platform/update_shared_memory.h
+ M src/core/main.cpp
+ M src/graphics/animation.cpp
+ M src/graphics/drawing_images.cpp
+ M src/platform/wayland.cpp'
+if [ "$worktree_status" != "$expected_status" ]; then
+    printf 'Upstream worktree differs from the expected patched files:\n%s\n' "$worktree_status" >&2
     exit 1
 fi
 

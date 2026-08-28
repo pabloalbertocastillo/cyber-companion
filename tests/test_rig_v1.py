@@ -7,6 +7,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RIG = json.loads(
     (ROOT / "assets/source/wisp/rig-v1/rig.json").read_text(encoding="utf-8")
 )
+SYSTEM_RIG = json.loads(
+    (ROOT / "assets/source/wisp/rig-v1/rig-system-v0.9.json").read_text(encoding="utf-8")
+)
 
 
 class RigV1Tests(unittest.TestCase):
@@ -55,6 +58,16 @@ class RigV1Tests(unittest.TestCase):
         self.assert_pose_equal(self.clips["start_moving"], -1, self.clips["moving"], 0)
         self.assert_pose_equal(self.clips["moving"], 0, self.clips["end_moving"], 0)
         self.assert_pose_equal(self.clips["end_moving"], -1, self.clips["idle"], 0)
+
+    def test_system_media_loop_and_boundaries_match(self):
+        clips = {clip["name"]: clip for clip in SYSTEM_RIG["clips"]}
+        self.assert_pose_equal(clips["idle"], 0, clips["start_working"], 0)
+        self.assert_pose_equal(clips["start_working"], -1, clips["working"], 0)
+        self.assert_pose_equal(clips["working"], 0, clips["end_working"], 0)
+        self.assert_pose_equal(clips["end_working"], -1, clips["idle"], 0)
+        for name in ("idle", "working", "moving"):
+            for track_name, track in clips[name]["tracks"].items():
+                self.assertEqual(track[0][1], track[-1][1], f"{name}:{track_name}")
 
 
 if __name__ == "__main__":
