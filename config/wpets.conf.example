@@ -20,8 +20,8 @@ enable_debug=0
 # Target a 75 Hz compositor refresh rate for smoother translation.
 fps=75
 
-animation_name=custom
 custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.9.png
+animation_name=custom
 custom_idle_frames=24
 custom_start_working_frames=24
 custom_working_frames=24
@@ -35,7 +35,7 @@ custom_mirror_x_moving=1
 idle_animation=1
 animation_speed=42
 idle_sleep_timeout=0
-happy_kpm=0
+happy_kpm=-1
 cpu_threshold=0
 
 # Slower, longer autonomous travel near the lower-right corner.
