@@ -12,6 +12,7 @@ source_dir=${CYBER_COMPANION_UPSTREAM_SOURCE:-"$data_dir/cyber-companion/wayland
 build_dir=$source_dir/build-cyber-companion
 alpha_patch=$repo_root/$CYBER_COMPANION_PATCH
 media_patch=$repo_root/$CYBER_COMPANION_MEDIA_PATCH
+config_patch=$repo_root/$CYBER_COMPANION_CONFIG_PATCH
 
 if [ ! -e "$source_dir" ]; then
     mkdir -p "$(dirname -- "$source_dir")"
@@ -45,6 +46,7 @@ verify_patch() {
 
 verify_patch "$alpha_patch" "$CYBER_COMPANION_PATCH_SHA256"
 verify_patch "$media_patch" "$CYBER_COMPANION_MEDIA_PATCH_SHA256"
+verify_patch "$config_patch" "$CYBER_COMPANION_CONFIG_PATCH_SHA256"
 
 current_commit=$(git -C "$source_dir" rev-parse HEAD)
 if [ "$current_commit" != "$commit" ]; then
@@ -71,10 +73,12 @@ apply_patch_once() {
 
 apply_patch_once "$alpha_patch" "alpha"
 apply_patch_once "$media_patch" "media-signal"
+apply_patch_once "$config_patch" "config-validation"
 
 worktree_status=$(git -C "$source_dir" status --porcelain --untracked-files=no)
 expected_status=' M include/graphics/animation.h
  M include/platform/update_shared_memory.h
+ M src/config/config.cpp
  M src/core/main.cpp
  M src/graphics/animation.cpp
  M src/graphics/drawing_images.cpp

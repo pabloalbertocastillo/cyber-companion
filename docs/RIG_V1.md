@@ -37,9 +37,9 @@ Wayland V-Pets still receives a generated sprite sheet. This is an adapter
 limitation, not the source format. The system atlas is 24 columns × 7 rows with
 256×192 cells. Runtime playback uses 42 ms per frame, approximately 24 FPS.
 
-The build applies two narrow patches to the pinned upstream commit. The first
-corrects premultiplied alpha. The second provides native play/stop signals and
-an independent media state, avoiding configuration reloads.
+The build applies three narrow patches to the pinned upstream commit. They
+correct premultiplied alpha, provide native play/stop signals, and fix the
+zero-threshold `happy_kpm` validation without enabling a nonexistent animation.
 
 ## Rebuild and verify
 

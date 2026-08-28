@@ -35,7 +35,7 @@ custom_mirror_x_moving=1
 idle_animation=1
 animation_speed=42
 idle_sleep_timeout=0
-happy_kpm=-1
+happy_kpm=0
 cpu_threshold=0
 
 # Slower, longer autonomous travel near the lower-right corner.

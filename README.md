@@ -67,7 +67,8 @@ keyframes in JSON, and compiles seven 24-frame clips with smooth interpolation.
 The media sequence activates, dances upright with broad arm motion, and returns
 to the exact idle pose. The renderer build applies versioned alpha and native
 media-state patches, while the sprite retains the doubled 224 px display
-height. The v0.3 atlas remains only as a rejected visual prototype.
+height. A third patch corrects upstream's zero-threshold `happy_kpm` validation.
+The v0.3 atlas remains only as a rejected visual prototype.
 
 Rebuild and validate the preview with:
 
@@ -88,7 +89,7 @@ Phase 0 evaluates [Wayland V-Pets](https://github.com/furudbat/wayland-vpets),
 an MIT-licensed Wayland overlay that explicitly documents Hyprland,
 multi-monitor support and runtime custom PNG sprite sheets. Cyber Companion does
 not vendor or redistribute the upstream project. The reproducible build applies
-two narrow local patches recorded in `UPSTREAM.lock`; it never silently switches
+three narrow local patches recorded in `UPSTREAM.lock`; it never silently switches
 upstream revisions.
 
 The renderer remains an adapter, not the core architecture. If it cannot expose

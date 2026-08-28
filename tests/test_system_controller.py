@@ -58,13 +58,16 @@ class MprisTests(unittest.TestCase):
 
 class StateAndRendererTests(unittest.TestCase):
     def test_custom_sprite_config_is_ordered_without_spurious_warnings(self) -> None:
-        config = (Path(__file__).resolve().parents[1] / "config/wpets.conf.example").read_text(encoding="utf-8")
+        root = Path(__file__).resolve().parents[1]
+        config = (root / "config/wpets.conf.example").read_text(encoding="utf-8")
         lines = config.splitlines()
         self.assertLess(
             lines.index("custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.9.png"),
             lines.index("animation_name=custom"),
         )
-        self.assertIn("happy_kpm=-1", lines)
+        self.assertIn("happy_kpm=0", lines)
+        validation_patch = (root / "renderer/patches/0003-happy-kpm-validation.patch").read_text(encoding="utf-8")
+        self.assertIn("config.happy_kpm > 0", validation_patch)
 
     def test_state_switches_profiles_and_persists_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

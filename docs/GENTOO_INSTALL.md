@@ -61,7 +61,7 @@ cd /path/to/cyber-companion
 The script clones only the upstream renderer into
 `${XDG_DATA_HOME:-$HOME/.local/share}/cyber-companion/wayland-vpets`, unless
 `CYBER_COMPANION_UPSTREAM_SOURCE` overrides it, checks out the pinned commit and
-builds `build-cyber-companion/bongocat`. It applies both checksum-pinned patches
+builds `build-cyber-companion/bongocat`. It applies all checksum-pinned patches
 recorded in `UPSTREAM.lock`, recognizes those exact patches on later builds,
 and stops on any other tracked modification. It does not use `sudo` or install
 files.
