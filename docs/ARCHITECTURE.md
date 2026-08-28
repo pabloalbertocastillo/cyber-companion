@@ -80,6 +80,16 @@ $XDG_DATA_HOME/cyber-companion/     Installed avatar assets
 
 No component should require root after installation.
 
+## v0.8 implementation
+
+The first implemented vertical slice uses `playerctl --all-players --follow` as an MPRIS
+adapter. `cyber_companion.events.EventBus` delivers normalized events to the
+state store, which persists a private JSON snapshot and selects a presentation
+profile. The Wayland V-Pets adapter owns configuration translation; neither the
+MPRIS adapter nor the state store knows renderer option names.
+
+See [System integration v0.8](SYSTEM_INTEGRATION.md) for the runtime contract.
+
 ## Security boundary
 
 The initial version will not read `/dev/input/event*`, join the `input` group,

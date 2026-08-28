@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "default_profile": "idle",
+  "event_profiles": {
+    "media.playing": "media",
+    "media.paused": "idle",
+    "media.stopped": "idle"
+  },
+  "profiles": {
+    "idle": {
+      "wpets": {
+        "animation_speed": 42,
+        "movement_radius": 360,
+        "movement_speed": 2,
+        "movement_wait_factor": 18.0
+      }
+    },
+    "media": {
+      "wpets": {
+        "animation_speed": 34,
+        "movement_radius": 360,
+        "movement_speed": 2,
+        "movement_wait_factor": 3.0
+      }
+    }
+  }
+}

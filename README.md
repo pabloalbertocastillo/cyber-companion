@@ -33,7 +33,7 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Produce Wisp Rig v1 with independently animated arms
 - [x] Correct Wayland ARGB premultiplied-alpha composition
 - [ ] Replace the compiled atlas adapter with live rig composition
-- [ ] Add MPRIS music reactions
+- [x] Add the v0.8 MPRIS event bus and music activity profiles
 - [ ] Add libvirt, network, idle and thermal adapters
 - [ ] Add an AI adapter
 
@@ -91,6 +91,22 @@ upstream revisions.
 The renderer remains an adapter, not the core architecture. If it cannot expose
 the state control needed for music and future integrations, it can be replaced
 without redesigning the character or event model.
+
+## Live system connection
+
+The v0.8 controller listens to every MPRIS-compatible media source through
+`playerctl --all-players --follow`, emits normalized events and switches
+Wayland V-Pets between calm and media activity profiles. Spotify, browser media,
+VLC and mpv share the same adapter. It writes only private runtime files and
+requires neither root nor keyboard access.
+
+```bash
+CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
+```
+
+Pause and resume any MPRIS player while the launcher runs. Detailed behavior
+and runtime paths are documented in
+[System integration v0.8](docs/SYSTEM_INTEGRATION.md).
 
 ## Licensing
 
