@@ -1,5 +1,5 @@
-# Cyber Companion Wisp v0.6 articulated movement preview
-# Idle, takeoff, horizontal flight and landing use one canonical raster master.
+# Cyber Companion Wisp v0.7 Rig v1 acceptance preview
+# Four 24-frame clips are compiled from a three-layer hierarchical source rig.
 # CPU and sleep reactions remain disabled until their transitions are ready.
 # No keyboard_device is intentionally configured.
 
@@ -17,19 +17,20 @@ overlay_opacity=0
 
 enable_antialiasing=1
 enable_debug=0
-fps=60
+# Target a 75 Hz compositor refresh rate for smoother translation.
+fps=75
 
 animation_name=custom
-custom_sprite_sheet_filename=assets/sprites/companion-wisp-movement-v0.6.png
-custom_idle_frames=6
-custom_start_moving_frames=6
-custom_moving_frames=8
-custom_end_moving_frames=6
+custom_sprite_sheet_filename=assets/sprites/companion-wisp-movement-v0.7.png
+custom_idle_frames=24
+custom_start_moving_frames=24
+custom_moving_frames=24
+custom_end_moving_frames=24
 custom_mirror_x_moving=1
 
-# Six deterministic frames, 180 ms each: a deliberate 1.08 s transition.
+# 24 interpolated poses at approximately 24 FPS: ~1 s per complete clip.
 idle_animation=1
-animation_speed=180
+animation_speed=42
 idle_sleep_timeout=0
 
 # Slower, longer autonomous travel near the lower-right corner.

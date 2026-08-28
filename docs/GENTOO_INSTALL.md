@@ -54,14 +54,22 @@ minimal renderer without tests, extra embedded character collections or a
 system-wide installation:
 
 ```bash
-cd /data/Development/projects/cyber-companion
+cd /path/to/cyber-companion
 ./scripts/build-renderer.sh
 ```
 
 The script clones only the upstream renderer into
-`/data/Development/tools/wayland-vpets`, checks out the pinned commit and builds
-`build-cyber-companion/bongocat`. It stops rather than modifying an unexpected
-or dirty existing checkout. It does not use `sudo` or install files.
+`${XDG_DATA_HOME:-$HOME/.local/share}/cyber-companion/wayland-vpets`, unless
+`CYBER_COMPANION_UPSTREAM_SOURCE` overrides it, checks out the pinned commit and
+builds `build-cyber-companion/bongocat`. It applies the single patch recorded in
+`UPSTREAM.lock`, recognizes that exact patch on later builds, and stops on any
+other local modification. It does not use `sudo` or install files.
+
+Confirm the patched pixel compositor independently:
+
+```bash
+./scripts/test-renderer-alpha.sh
+```
 
 ## 3. Safe test configuration
 
@@ -69,8 +77,9 @@ Copy `config/wpets.conf.example` to an XDG user configuration directory. The
 prototype intentionally omits `keyboard_device`; it does not require membership
 in the `input` group.
 
-The first test will use a bundled upstream sprite. The original Wisp artwork
-will be enabled only after a proper sprite sheet exists.
+The current acceptance test uses the generated Wisp Rig v1 atlas. Monitor
+selection remains explicit in the launcher and no configuration contains a
+machine-specific absolute asset path.
 
 ## 4. Hyprland autostart
 
@@ -78,7 +87,7 @@ Autostart is deliberately deferred until interactive testing succeeds on both
 monitors. The expected final shape is:
 
 ```ini
-exec-once = sleep 5 && /data/Development/tools/wayland-vpets/build-cyber-companion/bongocat --watch-config --config ~/.config/cyber-companion/wpets.conf --monitor DP-2
+exec-once = sleep 5 && env CYBER_COMPANION_MONITOR=<monitor-name> /path/to/cyber-companion/scripts/run-renderer.sh
 ```
 
 The five-second delay avoids a documented layer-order conflict with Waybar.

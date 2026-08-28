@@ -49,3 +49,16 @@ Takeoff and landing now use six eased frames; the arms tuck independently while
 the body tilts into flight. The runtime configuration doubles the displayed
 height from 112 to 224 pixels and slows autonomous travel so the horizontal
 state remains visible long enough to evaluate.
+
+## v0.7 Rig v1 acceptance preview
+
+`rig-v1/rig.json` replaces hard-coded pose arrays with a renderer-independent
+hierarchy, pivots and animation tracks. Body, left arm and right arm are stored
+as separate full-canvas RGBA layers. `scripts/build-rig-v1.py` interpolates the
+keyframes with smoothstep easing and compiles four clips of 24 frames each.
+
+The arms now travel through a visible 39–67 degree range during flight. A dark
+two-pixel contour supports light wallpapers without changing the canonical
+colors. The source rig remains editable independently from the generated atlas;
+future live renderers can consume the same hierarchy instead of the compiled
+Wayland V-Pets adapter.

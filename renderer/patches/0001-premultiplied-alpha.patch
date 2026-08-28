@@ -1,0 +1,276 @@
+diff --git a/src/graphics/drawing_images.cpp b/src/graphics/drawing_images.cpp
+index 215c791..2322d00 100644
+--- a/src/graphics/drawing_images.cpp
++++ b/src/graphics/drawing_images.cpp
+@@ -49,6 +49,17 @@ static void drawing_copy_pixel_rgba(uint8_t *dest, int dest_channels, int dest_i
+   }
+ }
+ 
++constexpr static uint8_t premultiply_channel(uint8_t value, uint8_t alpha) {
++  return static_cast<uint8_t>((static_cast<uint16_t>(value) * alpha + 127u) / 255u);
++}
++
++static void drawing_store_premultiplied_pixel(uint8_t *dest, int dest_channels, int dest_idx,
++                                              blit_image_color_order_t dest_order, uint8_t r, uint8_t g, uint8_t b,
++                                              uint8_t a) {
++  drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, premultiply_channel(r, a),
++                          premultiply_channel(g, a), premultiply_channel(b, a), a);
++}
++
+ void drawing_copy_pixel(uint8_t *dest, int dest_channels, int dest_idx, const unsigned char *src, int src_channels,
+                         int src_idx, blit_image_color_option_flags_t options, blit_image_color_order_t dest_order,
+                         blit_image_color_order_t src_order) {
+@@ -85,7 +96,12 @@ void drawing_copy_pixel(uint8_t *dest, int dest_channels, int dest_idx, const un
+     a = (src_channels >= 4) ? src[src_idx + 3] : 255;  // Alpha not inverted
+   }
+ 
+-  drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++  if (dest_order == blit_image_color_order_t::BGRA) {
++    drawing_store_premultiplied_pixel(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++  } else {
++    // Sprite-sheet staging buffers use straight RGBA and are sampled later.
++    drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++  }
+ }
+ 
+ void drawing_blend_pixel(uint8_t *dest, int dest_channels, int dest_idx, uint8_t src_r, uint8_t src_g, uint8_t src_b,
+@@ -107,7 +123,8 @@ void drawing_blend_pixel(uint8_t *dest, int dest_channels, int dest_idx, uint8_t
+     return;
+   }
+ 
+-  // Load into RGBA without branches
++  // wl_shm ARGB8888 requires premultiplied alpha. Destination RGB values are
++  // therefore already premultiplied and source-over must preserve alpha.
+   uint8_t r{0};
+   uint8_t g{0};
+   uint8_t b{0};
+@@ -129,26 +146,33 @@ void drawing_blend_pixel(uint8_t *dest, int dest_channels, int dest_idx, uint8_t
+       r = apply_invert(sr, invert);
+       g = apply_invert(sg, invert);
+       b = apply_invert(sb, invert);
+-      a = 255;  // Alpha not inverted
++      a = 255;
++      drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++      return;
+     } else {
+-      // Alpha blend: out = src * alpha + dest * (1 - alpha)
+-      const float alpha = static_cast<float>(sa) / 255.0f;
+-      const float inv_alpha = 1.0f - alpha;
+-
+-      // Map source channel indices for RGB
++      // Premultiplied source-over: out = src + dest * (1 - src_alpha).
+       const uint8_t dr = (dest_order == blit_image_color_order_t::RGBA) ? dest[dest_idx + 0] : dest[dest_idx + 2];
+       const uint8_t dg = dest[dest_idx + 1];
+       const uint8_t db = (dest_order == blit_image_color_order_t::RGBA) ? dest[dest_idx + 2] : dest[dest_idx + 0];
+-      // const uint8_t da = dest[dest_idx + 3];
+-
+-      r = static_cast<uint8_t>(lroundf((sr * alpha) + (dr * inv_alpha)));
+-      g = static_cast<uint8_t>(lroundf((sg * alpha) + (dg * inv_alpha)));
+-      b = static_cast<uint8_t>(lroundf((sb * alpha) + (db * inv_alpha)));
+-      a = 255;  // Alpha not inverted
++      const uint8_t da = dest_channels >= 4 ? dest[dest_idx + 3] : 255;
++      const uint16_t inv_alpha = static_cast<uint16_t>(255u - sa);
++
++      const auto source_over = [inv_alpha](uint8_t source_premultiplied, uint8_t destination_premultiplied) {
++        const uint32_t value = static_cast<uint32_t>(source_premultiplied) +
++                               ((static_cast<uint32_t>(destination_premultiplied) * inv_alpha + 127u) / 255u);
++        return static_cast<uint8_t>(value > 255u ? 255u : value);
++      };
++
++      r = source_over(premultiply_channel(apply_invert(sr, invert), sa), dr);
++      g = source_over(premultiply_channel(apply_invert(sg, invert), sa), dg);
++      b = source_over(premultiply_channel(apply_invert(sb, invert), sa), db);
++      a = source_over(sa, da);
++      drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++      return;
+     }
+   }
+ 
+-  drawing_copy_pixel_rgba(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
++  drawing_store_premultiplied_pixel(dest, dest_channels, dest_idx, dest_order, r, g, b, a);
+ }
+ 
+ struct drawing_get_pixel_result_t {
+@@ -157,6 +181,15 @@ struct drawing_get_pixel_result_t {
+   unsigned char b{0};
+   unsigned char a{0};
+ };
++
++static uint8_t drawing_unpremultiply_channel(float premultiplied, float alpha) {
++  if (alpha <= 0.0f) {
++    return 0;
++  }
++  const float straight = premultiplied * 255.0f / alpha;
++  return static_cast<uint8_t>(lroundf(straight > 255.0f ? 255.0f : straight));
++}
++
+ // Bilinear interpolation for smooth scaling
+ static drawing_get_pixel_result_t drawing_get_interpolated_pixel(const unsigned char *src, size_t src_size, int src_w,
+                                                                  int src_h, int src_channels, float fx, float fy) {
+@@ -196,41 +229,46 @@ static drawing_get_pixel_result_t drawing_get_interpolated_pixel(const unsigned
+   const int idx_bl = (y2 * src_w + x1) * src_channels;  // bottom-left
+   const int idx_br = (y2 * src_w + x2) * src_channels;  // bottom-right
+ 
+-  // Interpolate each channel
+-  drawing_get_pixel_result_t ret;
+-  for (int c = 0; c < src_channels; c++) {
+-    assert(idx_tl >= 0);
+-    assert(idx_tr >= 0);
+-    assert(idx_bl >= 0);
+-    assert(idx_br >= 0);
+-    const size_t tl_idx_c = static_cast<size_t>(idx_tl) + static_cast<size_t>(c);
+-    const size_t tr_idx_c = static_cast<size_t>(idx_tr) + static_cast<size_t>(c);
+-    const size_t bl_idx_c = static_cast<size_t>(idx_bl) + static_cast<size_t>(c);
+-    const size_t br_idx_c = static_cast<size_t>(idx_br) + static_cast<size_t>(c);
+-
+-    if (tl_idx_c < src_size && tr_idx_c < src_size && bl_idx_c < src_size && br_idx_c < src_size) {
+-      const float top = (static_cast<float>(src[tl_idx_c]) * (1.0f - dx)) + (static_cast<float>(src[tr_idx_c]) * dx);
+-      const float bottom = (static_cast<float>(src[bl_idx_c]) * (1.0f - dx)) + (static_cast<float>(src[br_idx_c]) * dx);
+-      const float result = (top * (1.0f - dy)) + (bottom * dy);
+-
+-      switch (c) {
+-      case 0:
+-        ret.r = static_cast<uint8_t>(lroundf(result));
+-        break;  // R
+-      case 1:
+-        ret.g = static_cast<uint8_t>(lroundf(result));
+-        break;  // G
+-      case 2:
+-        ret.b = static_cast<uint8_t>(lroundf(result));
+-        break;  // B
+-      case 3:
+-        ret.a = static_cast<uint8_t>(lroundf(result));
+-        break;  // A
+-      default:
+-        break;
+-      }
++  assert(idx_tl >= 0);
++  assert(idx_tr >= 0);
++  assert(idx_bl >= 0);
++  assert(idx_br >= 0);
++  const size_t bases[4] = {static_cast<size_t>(idx_tl), static_cast<size_t>(idx_tr),
++                           static_cast<size_t>(idx_bl), static_cast<size_t>(idx_br)};
++  for (const size_t base : bases) {
++    if (base + static_cast<size_t>(src_channels) > src_size) {
++      return {};
+     }
+   }
++
++  const auto component = [src, src_channels](size_t base, int channel) {
++    const float value = static_cast<float>(src[base + static_cast<size_t>(channel)]);
++    if (channel < 3 && src_channels >= 4) {
++      return value * static_cast<float>(src[base + 3]) / 255.0f;
++    }
++    return value;
++  };
++
++  float interpolated[4]{};
++  const int channels = src_channels < 4 ? src_channels : 4;
++  for (int channel = 0; channel < channels; channel++) {
++    const float top = (component(bases[0], channel) * (1.0f - dx)) + (component(bases[1], channel) * dx);
++    const float bottom = (component(bases[2], channel) * (1.0f - dx)) + (component(bases[3], channel) * dx);
++    interpolated[channel] = (top * (1.0f - dy)) + (bottom * dy);
++  }
++
++  drawing_get_pixel_result_t ret;
++  if (src_channels >= 4) {
++    ret.a = static_cast<uint8_t>(lroundf(interpolated[3]));
++    ret.r = drawing_unpremultiply_channel(interpolated[0], interpolated[3]);
++    ret.g = drawing_unpremultiply_channel(interpolated[1], interpolated[3]);
++    ret.b = drawing_unpremultiply_channel(interpolated[2], interpolated[3]);
++  } else {
++    ret.r = static_cast<uint8_t>(lroundf(interpolated[0]));
++    ret.g = channels > 1 ? static_cast<uint8_t>(lroundf(interpolated[1])) : ret.r;
++    ret.b = channels > 2 ? static_cast<uint8_t>(lroundf(interpolated[2])) : ret.r;
++    ret.a = 255;
++  }
+   return ret;
+ }
+ 
+@@ -272,43 +310,27 @@ static drawing_get_pixel_result_t drawing_get_box_filtered_pixel(const unsigned
+   const int idx_bl = (y2 * src_w + x1) * src_channels;
+   const int idx_br = (y2 * src_w + x2) * src_channels;
+ 
+-  float sum_r = 0.0f;
+-  float sum_g = 0.0f;
+-  float sum_b = 0.0f;
+-  float sum_a = 0.0f;
++  float sums[4]{};
+   int count = 0;
+ 
+   // Accumulate function (manual inline)
+   const int base_indices[4] = {idx_tl, idx_tr, idx_bl, idx_br};
+ 
+   assert(src_channels >= 0);
+-  for (int i = 0; i < src_channels; i++) {
+-    const int base = base_indices[i];
++  const int channels = src_channels < 4 ? src_channels : 4;
++  for (const int base : base_indices) {
+     if (base < 0) {
+       continue;
+     }
++    const size_t base_index = static_cast<size_t>(base);
++    if (base_index + static_cast<size_t>(src_channels) > src_size) {
++      continue;
++    }
+ 
+-    for (int c = 0; c < src_channels; c++) {
+-      const size_t idx_c = static_cast<size_t>(base) + static_cast<size_t>(c);
+-      if (idx_c >= src_size) {
+-        continue;
+-      }
+-
+-      const float v = src[idx_c];
+-      switch (c) {
+-      case 0:
+-        sum_r += v;
+-        break;
+-      case 1:
+-        sum_g += v;
+-        break;
+-      case 2:
+-        sum_b += v;
+-        break;
+-      case 3:
+-        sum_a += v;
+-        break;
+-      }
++    const float alpha = src_channels >= 4 ? static_cast<float>(src[base_index + 3]) : 255.0f;
++    for (int channel = 0; channel < channels; channel++) {
++      const float value = static_cast<float>(src[base_index + static_cast<size_t>(channel)]);
++      sums[channel] += channel < 3 && src_channels >= 4 ? value * alpha / 255.0f : value;
+     }
+     count++;
+   }
+@@ -317,14 +339,18 @@ static drawing_get_pixel_result_t drawing_get_box_filtered_pixel(const unsigned
+     count = 1;
+   }
+ 
++  const float divisor = static_cast<float>(count);
+   drawing_get_pixel_result_t ret;
+-  // Average
+-  ret.r = static_cast<uint8_t>(lroundf(sum_r / static_cast<float>(count)));
+-  ret.g = static_cast<uint8_t>(lroundf(sum_g / static_cast<float>(count)));
+-  ret.b = static_cast<uint8_t>(lroundf(sum_b / static_cast<float>(count)));
+-  if (src_channels == 4) {
+-    ret.a = static_cast<uint8_t>(lroundf(sum_a / static_cast<float>(count)));
++  if (src_channels >= 4) {
++    const float alpha = sums[3] / divisor;
++    ret.a = static_cast<uint8_t>(lroundf(alpha));
++    ret.r = drawing_unpremultiply_channel(sums[0] / divisor, alpha);
++    ret.g = drawing_unpremultiply_channel(sums[1] / divisor, alpha);
++    ret.b = drawing_unpremultiply_channel(sums[2] / divisor, alpha);
+   } else {
++    ret.r = static_cast<uint8_t>(lroundf(sums[0] / divisor));
++    ret.g = channels > 1 ? static_cast<uint8_t>(lroundf(sums[1] / divisor)) : ret.r;
++    ret.b = channels > 2 ? static_cast<uint8_t>(lroundf(sums[2] / divisor)) : ret.r;
+     ret.a = 255;
+   }
+   return ret;
+@@ -488,4 +514,4 @@ void blit_image_scaled(uint8_t *dest, size_t dest_size, int dest_w, int dest_h,
+     }
+   }
+ }
+-}  // namespace bongocat::animation
+\ No newline at end of file
++}  // namespace bongocat::animation

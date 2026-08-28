@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "asset_id": "companion-wisp-movement-v0.7",
+  "renderer_profile": "wayland-vpets-5.0.2-patched",
+  "status": "rig-v1-acceptance",
+  "image": {
+    "format": "png",
+    "color_mode": "rgba",
+    "bit_depth": 8,
+    "columns": 24,
+    "rows": 4,
+    "cell_width": 256,
+    "cell_height": 192
+  },
+  "safe_zone": {
+    "left": 20,
+    "right": 236,
+    "top": 12,
+    "bottom": 180
+  },
+  "pivot": {
+    "x": 128,
+    "y": 93,
+    "description": "Fixed visual center of the hierarchical root transform"
+  },
+  "states": [
+    {"row": 0, "name": "idle", "frames": 24, "playback": "loop"},
+    {"row": 1, "name": "start_moving", "frames": 24, "playback": "once"},
+    {"row": 2, "name": "moving", "frames": 24, "playback": "loop"},
+    {"row": 3, "name": "end_moving", "frames": 24, "playback": "once"}
+  ]
+}

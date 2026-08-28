@@ -1,7 +1,7 @@
 # Cyber Companion
 
-Cyber Companion is the visual personification of **VegetaLinux**: a metamorphic,
-holographic entity that reacts to the state of a Gentoo Linux + Hyprland system.
+Cyber Companion is a metamorphic, holographic entity that reacts to the state
+of a Gentoo Linux + Hyprland desktop.
 
 The project starts as a lightweight desktop companion and is intentionally
 designed to evolve into a visible interface for a local or remote AI system.
@@ -30,7 +30,9 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Define the Wisp v1 production sprite contract
 - [x] Produce a deterministic six-frame Wisp idle preview
 - [x] Produce deterministic takeoff, flight and landing previews
-- [ ] Produce the first Wisp sprite sheet
+- [x] Produce Wisp Rig v1 with independently animated arms
+- [x] Correct Wayland ARGB premultiplied-alpha composition
+- [ ] Replace the compiled atlas adapter with live rig composition
 - [ ] Add MPRIS music reactions
 - [ ] Add libvirt, network, idle and thermal adapters
 - [ ] Add an AI adapter
@@ -58,19 +60,23 @@ Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
 
 Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
-The default configuration now runs the v0.6 articulated movement acceptance
-preview. It separates both arms from the approved raster master, eases through
-six-frame takeoff and landing transitions, and displays Wisp at twice the v0.5
-height. System reactions remain disabled until their own transition rows exist.
-The v0.3 atlas remains only as a rejected visual prototype.
+The default configuration now runs the v0.7 Rig v1 acceptance preview. Its
+three-layer source rig separates the body and both arms, stores pivots and
+keyframes in JSON, and compiles four 24-frame clips with smooth interpolation.
+The renderer build applies a versioned premultiplied-alpha patch required by
+Wayland ARGB8888, while the sprite retains the doubled 224 px display height.
+System reactions remain disabled until their transitions exist. The v0.3 atlas
+remains only as a rejected visual prototype.
 
 Rebuild and validate the preview with:
 
 ```bash
-./scripts/build-movement-preview.sh
+./scripts/build-rig-v1.py
 python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-movement-v0.6.png \
-  assets/source/wisp/manifest-movement-v0.6.json
+  assets/sprites/companion-wisp-movement-v0.7.png \
+  assets/source/wisp/manifest-movement-v0.7.json
+
+./scripts/test-renderer-alpha.sh
 ```
 
 ## Upstream renderer candidate
@@ -78,7 +84,9 @@ python3 scripts/validate-sprite.py \
 Phase 0 evaluates [Wayland V-Pets](https://github.com/furudbat/wayland-vpets),
 an MIT-licensed Wayland overlay that explicitly documents Hyprland,
 multi-monitor support and runtime custom PNG sprite sheets. Cyber Companion does
-not vendor or redistribute the upstream project.
+not vendor or redistribute the upstream project. The reproducible build applies
+one narrow local patch recorded in `UPSTREAM.lock`; it never silently switches
+upstream revisions.
 
 The renderer remains an adapter, not the core architecture. If it cannot expose
 the state control needed for music and future integrations, it can be replaced
