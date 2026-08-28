@@ -58,7 +58,7 @@ else
     exit 1
 fi
 
-worktree_status=$(git -C "$source_dir" status --porcelain --untracked-files=normal)
+worktree_status=$(git -C "$source_dir" status --porcelain --untracked-files=no)
 if [ "$worktree_status" != " M src/graphics/drawing_images.cpp" ]; then
     printf 'Upstream worktree differs from the one expected patched file:\n%s\n' "$worktree_status" >&2
     exit 1
