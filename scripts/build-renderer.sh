@@ -59,9 +59,9 @@ fi
 apply_patch_once() {
     patch_file=$1
     patch_name=$2
-    if git -C "$source_dir" apply --check "$patch_file"; then
+    if git -C "$source_dir" apply --check "$patch_file" >/dev/null 2>&1; then
         git -C "$source_dir" apply "$patch_file"
-    elif git -C "$source_dir" apply --reverse --check "$patch_file"; then
+    elif git -C "$source_dir" apply --reverse --check "$patch_file" >/dev/null 2>&1; then
         printf 'Renderer %s patch is already applied.\n' "$patch_name"
     else
         printf 'Upstream worktree conflicts with the %s patch: %s\n' "$patch_name" "$source_dir" >&2
