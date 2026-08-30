@@ -1,49 +1,48 @@
-# Cyber Companion Phase 0 renderer validation
-# Uses the upstream custom Neko sheet only to verify autonomous animation.
+# Cyber Companion Wisp v0.11 native media and system-presence preview
+# Seven 24-frame clips are compiled from a three-layer hierarchical source rig.
+# Media uses Working rows; director-owned system load uses the former Moving rows.
 # No keyboard_device is intentionally configured.
 
-cat_height=96
+cat_height=224
 cat_align=right
 
 # With right alignment, positive values move the sprite left/inward.
-cat_x_offset=48
-cat_y_offset=-8
+cat_x_offset=112
+cat_y_offset=-12
 
-overlay_height=120
+overlay_height=256
 overlay_position=bottom
 overlay_layer=overlay
 overlay_opacity=0
 
-enable_antialiasing=0
+enable_antialiasing=1
 enable_debug=0
-fps=30
+# Target a 75 Hz compositor refresh rate for smoother translation.
+fps=75
 
-# Temporary animated sprite for renderer compatibility testing only.
+custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.11.png
 animation_name=custom
-custom_sprite_sheet_filename=/data/Development/tools/wayland-vpets/examples/custom-sprite-sheets/neko.png
-custom_idle_frames=2
-custom_boring_frames=2
-custom_writing_frames=2
-custom_happy_frames=2
-custom_asleep_frames=2
-custom_sleep_frames=2
-custom_wake_up_frames=1
-custom_working_frames=2
-custom_moving_frames=2
+custom_idle_frames=24
+custom_start_working_frames=24
+custom_working_frames=24
+custom_end_working_frames=24
+custom_start_moving_frames=24
+custom_moving_frames=24
+custom_end_moving_frames=24
 custom_mirror_x_moving=1
 
+# 24 interpolated poses at approximately 24 FPS: ~1 s per complete clip.
 idle_animation=1
-animation_speed=150
-idle_sleep_timeout=300
+animation_speed=42
+idle_sleep_timeout=0
+happy_kpm=0
+cpu_threshold=0
 
-update_rate=1000
-cpu_threshold=70
-cpu_running_factor=0.35
-
-movement_radius=220
-movement_speed=6
-movement_wait_factor=5.1
+# The behavior director is the only movement authority. Autonomous travel is
+# disabled so the renderer cannot rotate or move Wisp independently.
+movement_radius=0
+movement_speed=0
+movement_wait_factor=0
 enable_movement_debug=0
 
-# The workstation uses DP-2 on the left and DP-1 on the right.
-monitor=DP-2
+# Monitor selection is supplied by scripts/run-renderer.sh.

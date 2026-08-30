@@ -1,0 +1,21 @@
+diff --git a/src/config/config.cpp b/src/config/config.cpp
+index d8c1506..1d93926 100644
+--- a/src/config/config.cpp
++++ b/src/config/config.cpp
+@@ -782,7 +782,7 @@ static config_parse_result_t config_validate_custom(config_t& config) {
+       BONGOCAT_LOG_WARNING("enable_scheduled_sleep is enabled, but custom sprite sheet has no sleep animation");
+       ret = config_add_parse_info(ret, config_parsing_info_t::CustomSpriteSheetRequiredSleepAnimation);
+     }
+-    if (config.happy_kpm >= 0 && (config.custom_sprite_sheet_settings.happy_frames <= 0)) {
++    if (config.happy_kpm > 0 && (config.custom_sprite_sheet_settings.happy_frames <= 0)) {
+       BONGOCAT_LOG_WARNING("happy_kpm is used, but custom sprite sheet has no happy animation");
+       ret = config_add_parse_info(ret, config_parsing_info_t::CustomSpriteSheetRequiredHappyAnimation);
+     }
+@@ -2728,4 +2728,4 @@ loaded_config_result_t load_from_string(const char *content, load_config_overwri
+ }
+ #endif
+ 
+-}  // namespace bongocat::config
+\ No newline at end of file
++}  // namespace bongocat::config
+

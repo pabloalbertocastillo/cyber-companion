@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "asset_id": "companion-wisp-movement-v0.5",
+  "renderer_profile": "wayland-vpets-5.0.2",
+  "image": {
+    "format": "png",
+    "color_mode": "rgba",
+    "bit_depth": 8,
+    "cell_width": 256,
+    "cell_height": 192,
+    "columns": 8,
+    "rows": 4
+  },
+  "safe_zone": {
+    "left": 20,
+    "top": 12,
+    "right": 236,
+    "bottom": 180
+  },
+  "pivot": {
+    "x": 128,
+    "y": 93,
+    "description": "Fixed visual center used while rotating between hover and flight"
+  },
+  "states": [
+    {"name": "idle", "row": 0, "frames": 6, "playback": "loop"},
+    {"name": "start_moving", "row": 1, "frames": 4, "playback": "once"},
+    {"name": "moving", "row": 2, "frames": 8, "playback": "loop"},
+    {"name": "end_moving", "row": 3, "frames": 4, "playback": "once"}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "asset_id": "companion-wisp-idle-v0.4",
+  "renderer_profile": "wayland-vpets-5.0.2",
+  "image": {
+    "format": "png",
+    "color_mode": "rgba",
+    "bit_depth": 8,
+    "cell_width": 256,
+    "cell_height": 192,
+    "columns": 6,
+    "rows": 1
+  },
+  "safe_zone": {
+    "left": 20,
+    "top": 12,
+    "right": 236,
+    "bottom": 180
+  },
+  "pivot": {
+    "x": 128,
+    "y": 168,
+    "description": "Fixed world-space origin at the tip of the energy tail"
+  },
+  "states": [
+    {
+      "name": "idle",
+      "row": 0,
+      "frames": 6,
+      "playback": "loop"
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "asset_id": "companion-wisp-v1",
+  "renderer_profile": "wayland-vpets-5.0.2",
+  "image": {
+    "format": "png",
+    "color_mode": "rgba",
+    "bit_depth": 8,
+    "cell_width": 256,
+    "cell_height": 192,
+    "columns": 8,
+    "rows": 7
+  },
+  "safe_zone": {
+    "left": 20,
+    "top": 12,
+    "right": 236,
+    "bottom": 180
+  },
+  "pivot": {
+    "x": 128,
+    "y": 168,
+    "description": "Fixed world-space origin at the base of the energy tail"
+  },
+  "states": [
+    {
+      "name": "idle",
+      "row": 0,
+      "frames": 6,
+      "playback": "loop"
+    },
+    {
+      "name": "start_working",
+      "row": 1,
+      "frames": 4,
+      "playback": "once"
+    },
+    {
+      "name": "working",
+      "row": 2,
+      "frames": 6,
+      "playback": "loop"
+    },
+    {
+      "name": "end_working",
+      "row": 3,
+      "frames": 4,
+      "playback": "once"
+    },
+    {
+      "name": "start_moving",
+      "row": 4,
+      "frames": 4,
+      "playback": "once"
+    },
+    {
+      "name": "moving",
+      "row": 5,
+      "frames": 8,
+      "playback": "loop"
+    },
+    {
+      "name": "end_moving",
+      "row": 6,
+      "frames": 4,
+      "playback": "once"
+    }
+  ]
+}

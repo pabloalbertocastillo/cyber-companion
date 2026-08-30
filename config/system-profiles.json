@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "profiles": {
+    "idle": {},
+    "media": {},
+    "system_busy": {}
+  }
+}

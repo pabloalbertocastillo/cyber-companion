@@ -1,5 +1,9 @@
 .cache/
+__pycache__/
+*.py[cod]
 build/
+assets/previews/companion-wisp-system-v0.11.gif
+assets/sprites/companion-wisp-system-v0.11.png
 *.log
 *.pid
 config/local.conf

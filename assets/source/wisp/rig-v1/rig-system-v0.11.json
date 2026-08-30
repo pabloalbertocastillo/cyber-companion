@@ -1,0 +1,90 @@
+{
+  "version": 1,
+  "name": "wisp-rig-v1-system-v0.11",
+  "source_canvas": [190, 300],
+  "cell": [256, 192],
+  "anchor": [128, 168],
+  "render_size": [95, 150],
+  "outline": {"radius": 2, "color": "#06101fd0"},
+  "parts": [
+    {"name": "body", "parent": "root", "image": "layers/body.png", "pivot": [95, 150], "z": 0},
+    {"name": "left_arm", "parent": "root", "image": "layers/left-arm.png", "pivot": [44, 137], "z": 1},
+    {"name": "right_arm", "parent": "root", "image": "layers/right-arm.png", "pivot": [146, 137], "z": 2}
+  ],
+  "preview_sequence": [
+    "idle", "start_working", "working", "working", "end_working", "idle",
+    "start_moving", "moving", "moving", "end_moving", "idle"
+  ],
+  "clips": [
+    {
+      "name": "idle", "frames": 24, "duration_ms": 1008, "loop": true,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.5, 1.2], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.0], [0.5, 1.035], [1.0, 1.0]],
+        "root.offset_y": [[0.0, 0], [0.5, -3], [1.0, 0]],
+        "left_arm.rotation": [[0.0, -3], [0.5, 5], [1.0, -3]],
+        "right_arm.rotation": [[0.0, 3], [0.5, -5], [1.0, 3]]
+      }
+    },
+    {
+      "name": "start_working", "frames": 24, "duration_ms": 1008, "loop": false,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.35, -3], [0.7, 3], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.0], [0.45, 0.96], [0.75, 1.035], [1.0, 1.02]],
+        "root.offset_y": [[0.0, 0], [0.45, 2], [0.75, -3], [1.0, -2]],
+        "left_arm.rotation": [[0.0, -3], [0.35, -18], [0.7, -42], [1.0, -34]],
+        "right_arm.rotation": [[0.0, 3], [0.35, 18], [0.7, 42], [1.0, 34]]
+      }
+    },
+    {
+      "name": "working", "frames": 24, "duration_ms": 1008, "loop": true,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.25, -3], [0.5, 0], [0.75, 3], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.02], [0.25, 0.98], [0.5, 1.035], [0.75, 0.98], [1.0, 1.02]],
+        "root.offset_y": [[0.0, -2], [0.25, 0], [0.5, -3], [0.75, 0], [1.0, -2]],
+        "left_arm.rotation": [[0.0, -34], [0.25, 8], [0.5, -48], [0.75, 18], [1.0, -34]],
+        "right_arm.rotation": [[0.0, 34], [0.25, 48], [0.5, -8], [0.75, 54], [1.0, 34]]
+      }
+    },
+    {
+      "name": "end_working", "frames": 24, "duration_ms": 1008, "loop": false,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.35, 3], [0.7, -2], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.02], [0.35, 1.035], [0.7, 0.98], [1.0, 1.0]],
+        "root.offset_y": [[0.0, -2], [0.35, -3], [0.7, 1], [1.0, 0]],
+        "left_arm.rotation": [[0.0, -34], [0.35, -42], [0.7, -18], [1.0, -3]],
+        "right_arm.rotation": [[0.0, 34], [0.35, 42], [0.7, 18], [1.0, 3]]
+      }
+    },
+    {
+      "name": "start_moving", "frames": 24, "duration_ms": 1008, "loop": false,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.5, -2], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.0], [0.55, 0.97], [1.0, 1.015]],
+        "root.offset_y": [[0.0, 0], [0.55, 1], [1.0, -2]],
+        "left_arm.rotation": [[0.0, -3], [0.5, -28], [1.0, -38]],
+        "right_arm.rotation": [[0.0, 3], [0.5, 28], [1.0, 38]]
+      }
+    },
+    {
+      "name": "moving", "frames": 24, "duration_ms": 1008, "loop": true,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.25, -2], [0.5, 0], [0.75, 2], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.015], [0.5, 0.985], [1.0, 1.015]],
+        "root.offset_y": [[0.0, -2], [0.5, 1], [1.0, -2]],
+        "left_arm.rotation": [[0.0, -38], [0.25, -20], [0.5, -42], [0.75, -24], [1.0, -38]],
+        "right_arm.rotation": [[0.0, 38], [0.25, 20], [0.5, 42], [0.75, 24], [1.0, 38]]
+      }
+    },
+    {
+      "name": "end_moving", "frames": 24, "duration_ms": 1008, "loop": false,
+      "tracks": {
+        "root.rotation": [[0.0, 0], [0.5, 2], [1.0, 0]],
+        "root.scale_y": [[0.0, 1.015], [0.5, 0.98], [1.0, 1.0]],
+        "root.offset_y": [[0.0, -2], [0.5, 1], [1.0, 0]],
+        "left_arm.rotation": [[0.0, -38], [0.5, -18], [1.0, -3]],
+        "right_arm.rotation": [[0.0, 38], [0.5, 18], [1.0, 3]]
+      }
+    }
+  ]
+}

@@ -3,8 +3,9 @@
 Cyber Companion separates system observation, behavior and rendering.
 
 ```text
-system adapters -> normalized events -> state engine -> presentation command
-                                                    -> renderer adapter
+system adapters -> event bus -> domain state -> behavior director
+                                            -> presentation command
+                                            -> renderer adapter
 ```
 
 ## Event envelope
@@ -36,18 +37,32 @@ Initial event families:
 | session | `session.locked`, `session.active`, `session.shutdown` |
 | AI (future) | `ai.listening`, `ai.thinking`, `ai.speaking`, `ai.error` |
 
+## Behavior configuration
+
+Behavior policy lives in `config/behaviors.json`; adapters and renderers do not
+contain priority policy. Each rule reads a versioned domain-state path, declares
+its priority and produces a renderer-neutral presentation command. New adapters
+can add domains without changing the director.
+
+The highest-priority matching rule wins. Ties are resolved by stable behavior
+name ordering, which makes selection deterministic and testable.
+
+Enabled inputs live in `config/adapters.json`. Every adapter implements the same
+`run`/`stop` lifecycle, publishes only normalized events and runs independently.
+The event bus serializes concurrent publication so the state model observes a
+total event order. Adapter-specific settings remain inside that adapter's entry.
+
 ## Presentation command
 
 The state engine resolves competing events into one presentation command:
 
 ```json
 {
-  "form": "wisp",
-  "emotion": "enjoying_music",
-  "animation": "music_sway",
-  "accent": "cyan",
+  "version": 1,
+  "profile": "media",
+  "behavior": "music_sway",
   "intensity": 0.65,
-  "ttl_ms": 12000
+  "transition": "smooth"
 }
 ```
 
@@ -79,6 +94,46 @@ $XDG_DATA_HOME/cyber-companion/     Installed avatar assets
 ```
 
 No component should require root after installation.
+
+## v0.11 system presence
+
+The `linux_system` adapter reads `/proc/stat`, `/proc/meminfo` and available
+`/sys/class/hwmon` temperature sensors without root privileges. CPU load uses
+time-based entry and exit hysteresis, so brief spikes do not change Wisp's
+behavior. Thresholds, sampling and dwell times are declared in
+`config/adapters.json`.
+
+`system_busy` has priority 50, above media at 40; thermal alert has priority
+100. The renderer maps the former movement rows to an upright processing
+sequence and disables autonomous travel. All three system-presence rows are
+contract-tested to remain within three degrees of vertical.
+
+## v0.10 extensible behavior core
+
+`BehaviorDirector` is the single presentation authority. `StateStore` reduces
+events into independent domain snapshots and persists the last renderer-neutral
+command. `BehaviorEngine` resolves the command from declarative, validated rules.
+The Wayland V-Pets adapter only translates a selected profile into its native
+signal; it does not inspect MPRIS or choose behavior.
+
+Renderer-owned autonomous movement is disabled. In Wayland V-Pets,
+`movement_radius=0` and `movement_speed=0` are the documented off values. This
+prevents the upstream movement state machine from competing with the director.
+
+The first live adapter remains MPRIS. PipeWire audio energy, system load,
+libvirt and network status can be added as separate adapters over the same event
+and domain-state contracts.
+
+## v0.9 implementation history
+
+The first implemented vertical slice uses `playerctl --all-players --follow` as an MPRIS
+adapter. `cyber_companion.events.EventBus` delivers normalized events to the
+state store, which persists a private JSON snapshot and selects a presentation
+profile. The Wayland V-Pets adapter translates that profile into a native
+media-state signal; neither the MPRIS adapter nor the state store knows renderer
+signals or animation rows.
+
+See [System integration v0.10](SYSTEM_INTEGRATION.md) for the current runtime contract.
 
 ## Security boundary
 
