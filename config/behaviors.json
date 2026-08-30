@@ -8,6 +8,34 @@
   },
   "behaviors": [
     {
+      "name": "thermal_alert",
+      "priority": 100,
+      "when": {
+        "path": "domains.system.thermal_alert",
+        "equals": true
+      },
+      "command": {
+        "profile": "system_busy",
+        "behavior": "thermal_alert",
+        "intensity": 1.0,
+        "transition": "immediate"
+      }
+    },
+    {
+      "name": "system_busy",
+      "priority": 50,
+      "when": {
+        "path": "domains.system.busy",
+        "equals": true
+      },
+      "command": {
+        "profile": "system_busy",
+        "behavior": "processing",
+        "intensity": 0.75,
+        "transition": "smooth"
+      }
+    },
+    {
       "name": "media_playing",
       "priority": 40,
       "when": {

@@ -1,14 +1,18 @@
-# System integration v0.10
+# System integration v0.11
 
-v0.10 retains the first native end-to-end system connection. It listens to every available
-MPRIS source, normalizes media events and selects a presentation profile without
-granting the renderer access to D-Bus.
+v0.11 retains all-player MPRIS and adds dependency-free Linux telemetry. Both
+adapters emit normalized events and select behavior without granting the
+renderer access to D-Bus, `/proc` or `hwmon`.
 
 ```text
 Spotify, browsers, VLC, mpv ... -> MPRIS -> playerctl --all-players --follow
                                              -> event bus -> domain state
                                                           -> behavior director
                                                           -> native media signal
+
+/proc + hwmon -> linux_system adapter -> event bus -> domain state
+                                                   -> behavior director
+                                                   -> native system signal
 ```
 
 ## Runtime behavior
@@ -18,6 +22,9 @@ Spotify, browsers, VLC, mpv ... -> MPRIS -> playerctl --all-players --follow
 | Any player playing | `media` | Activation, upright arm dance, then a continuous rhythmic loop |
 | Paused, stopped or absent | `idle` | Deactivation and exact return to calm breathing |
 | Track changed | unchanged | Metadata is updated without restarting the animation |
+| CPU ≥70% for 4s | `system_busy` | Upright processing activation and loop |
+| CPU ≤40% for 6s | next eligible | Smooth processing exit |
+| Temperature ≥80°C | `system_busy` | Highest-priority thermal behavior |
 
 Behavior selection is configured in `config/behaviors.json`. MPRIS only emits
 normalized events; it never selects renderer signals or animation rows. The
@@ -44,7 +51,7 @@ This milestone covers applications that implement MPRIS. Browser media such as
 YouTube normally participates through the browser's MPRIS integration, as do
 Spotify, VLC and suitably configured mpv. Raw PipeWire audio streams from games
 or applications without MPRIS will require a separate audio-activity adapter;
-they are intentionally not inferred from volume alone in v0.10.
+they are intentionally not inferred from volume alone in v0.11.
 
 ## Interactive test
 

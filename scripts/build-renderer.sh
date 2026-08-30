@@ -13,6 +13,15 @@ build_dir=$source_dir/build-cyber-companion
 alpha_patch=$repo_root/$CYBER_COMPANION_PATCH
 media_patch=$repo_root/$CYBER_COMPANION_MEDIA_PATCH
 config_patch=$repo_root/$CYBER_COMPANION_CONFIG_PATCH
+system_patch=$repo_root/$CYBER_COMPANION_SYSTEM_PATCH
+system_atlas=$repo_root/assets/sprites/companion-wisp-system-v0.11.png
+
+# Generated atlases are build artifacts. The rig and its layers are the
+# versioned source of truth, so compile the active atlas on demand.
+if [ ! -f "$system_atlas" ]; then
+    printf 'Generating Wisp v0.11 system-presence atlas...\n'
+    "$repo_root/scripts/build-rig-v1.py" --system-presence
+fi
 
 if [ ! -e "$source_dir" ]; then
     mkdir -p "$(dirname -- "$source_dir")"
@@ -47,6 +56,7 @@ verify_patch() {
 verify_patch "$alpha_patch" "$CYBER_COMPANION_PATCH_SHA256"
 verify_patch "$media_patch" "$CYBER_COMPANION_MEDIA_PATCH_SHA256"
 verify_patch "$config_patch" "$CYBER_COMPANION_CONFIG_PATCH_SHA256"
+verify_patch "$system_patch" "$CYBER_COMPANION_SYSTEM_PATCH_SHA256"
 
 current_commit=$(git -C "$source_dir" rev-parse HEAD)
 if [ "$current_commit" != "$commit" ]; then
@@ -74,6 +84,7 @@ apply_patch_once() {
 apply_patch_once "$alpha_patch" "alpha"
 apply_patch_once "$media_patch" "media-signal"
 apply_patch_once "$config_patch" "config-validation"
+apply_patch_once "$system_patch" "system-presence"
 
 worktree_status=$(git -C "$source_dir" status --porcelain --untracked-files=no)
 expected_status=' M include/graphics/animation.h

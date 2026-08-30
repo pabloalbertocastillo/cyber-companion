@@ -9,5 +9,8 @@ int main() {
   assert(!state.media_active);
   state.media_active = true;
   assert(state.media_active);
+  assert(!state.system_busy);
+  state.system_busy = true;
+  assert(state.system_busy);
   return 0;
 }

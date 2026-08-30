@@ -1,0 +1,137 @@
+diff --git a/include/graphics/animation.h b/include/graphics/animation.h
+index 11c908b..761c355 100644
+--- a/include/graphics/animation.h
++++ b/include/graphics/animation.h
+@@ -25,6 +25,7 @@ enum class trigger_animation_cause_mask_t : uint64_t {
+   EvolutionUpdate = (1u << 6u),
+   StartEvolution = (1u << 7u),
+   MediaUpdate = (1u << 8u),
++  SystemUpdate = (1u << 9u),
+ };
+ 
+ // =============================================================================
+diff --git a/include/platform/update_shared_memory.h b/include/platform/update_shared_memory.h
+index 10c4b5d..d4a5813 100644
+--- a/include/platform/update_shared_memory.h
++++ b/include/platform/update_shared_memory.h
+@@ -35,6 +35,7 @@ struct update_shared_memory_t {
+   double last_max_cpu_usage{0};
+   bool cpu_active{false};
+   bool media_active{false};
++  bool system_busy{false};
+ 
+   struct timespec program_start_time{};
+   time_sec_t uptime_sec{0};
+diff --git a/src/core/main.cpp b/src/core/main.cpp
+index f72352b..f9b886e 100644
+--- a/src/core/main.cpp
++++ b/src/core/main.cpp
+@@ -729,6 +729,7 @@ static bongocat_error_t signal_setup_handlers(main_context_t& ctx) {
+   sigaddset(&mask, SIGUSR2);
+   sigaddset(&mask, SIGRTMIN);
+   sigaddset(&mask, SIGRTMIN + 1);
++  sigaddset(&mask, SIGRTMIN + 2);
+   sigaddset(&mask, SIGQUIT);
+   sigaddset(&mask, SIGHUP);
+ 
+diff --git a/src/graphics/animation.cpp b/src/graphics/animation.cpp
+index 01e048d..51a3f2e 100644
+--- a/src/graphics/animation.cpp
++++ b/src/graphics/animation.cpp
+@@ -4750,8 +4750,25 @@ static anim_next_frame_result_t anim_custom_idle_next_frame(animation_context_t&
+   case animation_state_row_t::Moving:
+   case animation_state_row_t::EndMoving:
+     if (current_frames.feature_moving) {
+-      anim_custom_handle_movement(ctx, input, upd, new_animation_result, new_state, trigger_result, current_state,
+-                                  current_frames, current_config);
++      if (update_shm.system_busy) {
++        if (current_state.row_state == animation_state_row_t::StartMoving && conditions.go_next_frame) {
++          anim_custom_start_or_process_animation(ctx, animation_state_row_t::Moving,
++                                                 animation_state_row_t::EndMoving, new_animation_result, new_state,
++                                                 current_state, current_frames, current_config);
++        } else if (current_state.row_state == animation_state_row_t::Moving && conditions.go_next_frame) {
++          anim_custom_process_animation(new_animation_result, new_state, current_state, current_frames);
++        } else if (current_state.row_state == animation_state_row_t::EndMoving) {
++          anim_custom_restart_animation(ctx, animation_state_row_t::StartMoving, new_animation_result, new_state,
++                                        current_state, current_frames, current_config);
++        }
++      } else if (current_state.row_state == animation_state_row_t::EndMoving && conditions.go_next_frame) {
++        anim_custom_start_or_process_animation(ctx, animation_state_row_t::Idle, new_animation_result, new_state,
++                                               current_state, current_frames, current_config);
++      } else if (conditions.go_next_frame) {
++        anim_custom_start_or_process_animation(ctx, animation_state_row_t::EndMoving,
++                                               animation_state_row_t::Idle, new_animation_result, new_state,
++                                               current_state, current_frames, current_config);
++      }
+     }
+     break;
+   case animation_state_row_t::StartWorking:
+@@ -4815,9 +4832,10 @@ static anim_next_frame_result_t anim_custom_idle_next_frame(animation_context_t&
+     }
+ 
+     if (current_frames.feature_moving) {
+-      // Move Animation
+-      anim_custom_handle_movement(ctx, input, upd, new_animation_result, new_state, trigger_result, current_state,
+-                                  current_frames, current_config);
++      if (update_shm.system_busy) {
++        anim_custom_restart_animation(ctx, animation_state_row_t::StartMoving, new_animation_result, new_state,
++                                      current_state, current_frames, current_config);
++      }
+     }
+ 
+     if (current_frames.feature_sleep || current_frames.feature_boring) {
+@@ -5775,6 +5793,11 @@ static anim_handle_key_press_result_t anim_handle_animation_trigger(animation_co
+ 
+   anim_next_frame_result_t update_frame_result{};
+ 
++  if (has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::SystemUpdate)) {
++    const anim_handle_key_press_result_t system_trigger{.trigger = trigger};
++    update_frame_result = anim_handle_idle_animation(animation_ctx, state, system_trigger);
++  }
++
+   if (has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::CpuUpdate) ||
+       has_flag(trigger.anim_cause, trigger_animation_cause_mask_t::MediaUpdate)) {
+     // handle working animation
+@@ -6504,6 +6527,9 @@ static void *anim_thread(void *arg) {
+           case trigger_animation_cause_mask_t::MediaUpdate:
+             triggered_anim_cause = flag_add(triggered_anim_cause, cause);
+             break;
++          case trigger_animation_cause_mask_t::SystemUpdate:
++            triggered_anim_cause = flag_add(triggered_anim_cause, cause);
++            break;
+           }
+         }
+         if (rc < 0) {
+diff --git a/src/platform/wayland.cpp b/src/platform/wayland.cpp
+index fe172e2..3a215ab 100644
+--- a/src/platform/wayland.cpp
++++ b/src/platform/wayland.cpp
+@@ -247,16 +247,24 @@ bongocat_error_t run(wayland_context_t& ctx, volatile sig_atomic_t& running, int
+         if (s != sizeof(fdsi)) {
+           BONGOCAT_LOG_ERROR("Failed to read signal fd");
+         } else {
+-          if (fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN) ||
+-              fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN + 1)) {
++          if (fdsi.ssi_signo >= static_cast<uint32_t>(SIGRTMIN) &&
++              fdsi.ssi_signo <= static_cast<uint32_t>(SIGRTMIN + 2)) {
+             const bool media_active = fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN);
++            const bool system_busy = fdsi.ssi_signo == static_cast<uint32_t>(SIGRTMIN + 2);
+             auto& update_ctx = *animation_ctx._update;
+             {
+               platform::LockGuard guard(update_ctx.update_lock);
+               update_ctx.shm->media_active = media_active;
++              update_ctx.shm->system_busy = system_busy;
++            }
++            if (system_busy) {
++              BONGOCAT_LOG_INFO("System busy started");
++              animation::trigger(animation_ctx, animation::trigger_animation_cause_mask_t::SystemUpdate);
++            } else {
++              BONGOCAT_LOG_INFO("System busy stopped; media playback %s", media_active ? "started" : "stopped");
++              animation::trigger(animation_ctx, animation::trigger_animation_cause_mask_t::SystemUpdate);
++              animation::trigger(animation_ctx, animation::trigger_animation_cause_mask_t::MediaUpdate);
+             }
+-            BONGOCAT_LOG_INFO("Media playback %s", media_active ? "started" : "stopped");
+-            animation::trigger(animation_ctx, animation::trigger_animation_cause_mask_t::MediaUpdate);
+           } else switch (fdsi.ssi_signo) {
+           case SIGINT:
+           case SIGTERM:

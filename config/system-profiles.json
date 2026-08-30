@@ -2,6 +2,7 @@
   "version": 1,
   "profiles": {
     "idle": {},
-    "media": {}
+    "media": {},
+    "system_busy": {}
   }
 }

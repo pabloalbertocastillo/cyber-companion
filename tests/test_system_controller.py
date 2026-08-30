@@ -12,6 +12,7 @@ from cyber_companion.adapters.mpris import (
     parse_playerctl_line,
 )
 from cyber_companion.adapters.registry import build_adapters, load_adapter_specs
+from cyber_companion.adapters.system import BusyLatch, cpu_ratio, read_memory_ratio, read_temperature_c
 from cyber_companion.events import Event
 from cyber_companion.presentation import PresentationCommand
 from cyber_companion.renderers.media_signals import MediaSignalRendererAdapter
@@ -63,7 +64,7 @@ class MprisTests(unittest.TestCase):
         root = Path(__file__).resolve().parents[1]
         specs = load_adapter_specs(root / "config/adapters.json")
         adapters = build_adapters(specs)
-        self.assertEqual([name for name, _adapter in adapters], ["desktop_media"])
+        self.assertEqual([name for name, _adapter in adapters], ["desktop_media", "gentoo_system"])
         self.assertIsInstance(adapters[0][1], PlayerctlMprisAdapter)
 
     def test_unknown_enabled_adapter_is_rejected(self) -> None:
@@ -79,7 +80,7 @@ class StateAndRendererTests(unittest.TestCase):
         config = (root / "config/wpets.conf.example").read_text(encoding="utf-8")
         lines = config.splitlines()
         self.assertLess(
-            lines.index("custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.9.png"),
+            lines.index("custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.11.png"),
             lines.index("animation_name=custom"),
         )
         self.assertIn("happy_kpm=0", lines)
@@ -113,7 +114,7 @@ class StateAndRendererTests(unittest.TestCase):
         notified: list[tuple[int, int]] = []
         renderer = MediaSignalRendererAdapter(
             renderer_pid=123,
-            profiles={"idle", "media"},
+            profiles={"idle", "media", "system_busy"},
             notifier=lambda process_id, signal_number: notified.append((process_id, signal_number)),
         )
 
@@ -126,6 +127,10 @@ class StateAndRendererTests(unittest.TestCase):
         self.assertEqual(notified[0][0], 123)
         self.assertEqual(notified[1][0], 123)
         self.assertEqual(notified[1][1], notified[0][1] - 1)
+
+        busy = PresentationCommand("system_busy", "processing", 0.75)
+        self.assertTrue(renderer.apply(busy))
+        self.assertEqual(notified[2][1], notified[0][1] + 1)
 
     def test_reconciliation_removes_closed_playing_player(self) -> None:
         mapper = MprisEventMapper()
@@ -150,6 +155,10 @@ class StateAndRendererTests(unittest.TestCase):
         self.assertEqual(idle.behavior, "system_presence")
         self.assertEqual(media.behavior, "music_sway")
         self.assertEqual(media.profile, "media")
+
+        busy = engine.resolve({"domains": {"system": {"busy": True}, "media": {"status": "playing"}}})
+        self.assertEqual(busy.behavior, "processing")
+        self.assertEqual(busy.profile, "system_busy")
 
     def test_behavior_priority_is_deterministic(self) -> None:
         default = PresentationCommand("idle", "idle")
@@ -186,6 +195,38 @@ class StateAndRendererTests(unittest.TestCase):
         config = (root / "config/wpets.conf.example").read_text(encoding="utf-8")
         self.assertIn("movement_radius=0", config.splitlines())
         self.assertIn("movement_speed=0", config.splitlines())
+
+
+class SystemAdapterTests(unittest.TestCase):
+    def test_cpu_ratio_uses_jiffy_deltas(self) -> None:
+        self.assertAlmostEqual(cpu_ratio((100, 40), (200, 70)), 0.70)
+        self.assertEqual(cpu_ratio((100, 40), (100, 40)), 0.0)
+
+    def test_busy_latch_requires_sustained_thresholds(self) -> None:
+        now = [0.0]
+        latch = BusyLatch(0.70, 4.0, 0.40, 6.0, clock=lambda: now[0])
+        self.assertFalse(latch.update(0.80))
+        now[0] = 3.9
+        self.assertFalse(latch.update(0.80))
+        now[0] = 4.0
+        self.assertTrue(latch.update(0.80))
+        now[0] = 9.0
+        self.assertTrue(latch.update(0.30))
+        now[0] = 15.0
+        self.assertFalse(latch.update(0.30))
+
+    def test_memory_and_temperature_readers_tolerate_realistic_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            memory = root / "meminfo"
+            memory.write_text("MemTotal: 1000 kB\nMemAvailable: 250 kB\n", encoding="utf-8")
+            self.assertEqual(read_memory_ratio(memory), 0.75)
+
+            hwmon = root / "hwmon0"
+            hwmon.mkdir()
+            (hwmon / "temp1_input").write_text("52000\n", encoding="utf-8")
+            (hwmon / "temp2_input").write_text("not-a-number\n", encoding="utf-8")
+            self.assertEqual(read_temperature_c(root), 52.0)
 
 
 if __name__ == "__main__":

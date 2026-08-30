@@ -9,6 +9,7 @@ from typing import Callable, Mapping
 
 from cyber_companion.adapters.base import SystemAdapter
 from cyber_companion.adapters.mpris import PlayerctlMprisAdapter
+from cyber_companion.adapters.system import LinuxSystemAdapter
 
 
 AdapterFactory = Callable[[Mapping[str, object]], SystemAdapter]
@@ -32,7 +33,19 @@ def _mpris_factory(settings: Mapping[str, object]) -> SystemAdapter:
     return PlayerctlMprisAdapter(executable=executable)
 
 
-ADAPTER_FACTORIES: dict[str, AdapterFactory] = {"mpris": _mpris_factory}
+def _system_factory(settings: Mapping[str, object]) -> SystemAdapter:
+    allowed = {"interval_seconds", "busy_above", "busy_for_seconds", "idle_below",
+               "idle_for_seconds", "thermal_warning_c"}
+    unknown = sorted(set(settings) - allowed)
+    if unknown:
+        raise ValueError(f"linux_system settings have unknown keys: {', '.join(unknown)}")
+    return LinuxSystemAdapter(**{key: float(value) for key, value in settings.items()})
+
+
+ADAPTER_FACTORIES: dict[str, AdapterFactory] = {
+    "mpris": _mpris_factory,
+    "linux_system": _system_factory,
+}
 
 
 def load_adapter_specs(path: Path) -> list[AdapterSpec]:

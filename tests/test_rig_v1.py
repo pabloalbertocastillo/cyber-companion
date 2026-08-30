@@ -8,7 +8,7 @@ RIG = json.loads(
     (ROOT / "assets/source/wisp/rig-v1/rig.json").read_text(encoding="utf-8")
 )
 SYSTEM_RIG = json.loads(
-    (ROOT / "assets/source/wisp/rig-v1/rig-system-v0.9.json").read_text(encoding="utf-8")
+    (ROOT / "assets/source/wisp/rig-v1/rig-system-v0.11.json").read_text(encoding="utf-8")
 )
 
 
@@ -68,6 +68,12 @@ class RigV1Tests(unittest.TestCase):
         for name in ("idle", "working", "moving"):
             for track_name, track in clips[name]["tracks"].items():
                 self.assertEqual(track[0][1], track[-1][1], f"{name}:{track_name}")
+
+    def test_system_presence_rows_remain_upright(self):
+        clips = {clip["name"]: clip for clip in SYSTEM_RIG["clips"]}
+        for name in ("start_moving", "moving", "end_moving"):
+            rotations = [keyframe[1] for keyframe in clips[name]["tracks"]["root.rotation"]]
+            self.assertLessEqual(max(abs(value) for value in rotations), 3, name)
 
 
 if __name__ == "__main__":

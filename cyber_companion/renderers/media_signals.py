@@ -41,6 +41,8 @@ class MediaSignalRendererAdapter:
             signal_number = int(signal.SIGRTMIN)
         elif profile == "idle":
             signal_number = int(signal.SIGRTMIN) + 1
+        elif profile == "system_busy":
+            signal_number = int(signal.SIGRTMIN) + 2
         else:
             raise ValueError(f"profile has no native renderer signal: {profile}")
 

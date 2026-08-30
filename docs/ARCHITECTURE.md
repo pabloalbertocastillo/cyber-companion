@@ -95,6 +95,19 @@ $XDG_DATA_HOME/cyber-companion/     Installed avatar assets
 
 No component should require root after installation.
 
+## v0.11 system presence
+
+The `linux_system` adapter reads `/proc/stat`, `/proc/meminfo` and available
+`/sys/class/hwmon` temperature sensors without root privileges. CPU load uses
+time-based entry and exit hysteresis, so brief spikes do not change Wisp's
+behavior. Thresholds, sampling and dwell times are declared in
+`config/adapters.json`.
+
+`system_busy` has priority 50, above media at 40; thermal alert has priority
+100. The renderer maps the former movement rows to an upright processing
+sequence and disables autonomous travel. All three system-presence rows are
+contract-tested to remain within three degrees of vertical.
+
 ## v0.10 extensible behavior core
 
 `BehaviorDirector` is the single presentation authority. `StateStore` reduces

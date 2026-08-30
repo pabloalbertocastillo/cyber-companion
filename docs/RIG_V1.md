@@ -15,7 +15,8 @@ coordinates remain identical and no registration metadata is lost.
 ## Animation contract
 
 `assets/source/wisp/rig-v1/rig.json` defines the original movement clips.
-`rig-system-v0.9.json` adds three explicit system-media clips before them:
+`rig-system-v0.11.json` retains the three system-media clips and repurposes the
+former movement rows as upright system-presence clips:
 
 | Clip | Frames | Nominal duration | Playback |
 |---|---:|---:|---|
@@ -37,7 +38,11 @@ Wayland V-Pets still receives a generated sprite sheet. This is an adapter
 limitation, not the source format. The system atlas is 24 columns × 7 rows with
 256×192 cells. Runtime playback uses 42 ms per frame, approximately 24 FPS.
 
-The build applies three narrow patches to the pinned upstream commit. They
+Generated v0.11 PNG/GIF outputs are intentionally not versioned. The renderer
+build creates them on demand from the rig, layers and manifest, keeping visual
+behavior reproducible and avoiding a second authoritative representation.
+
+The build applies four narrow patches to the pinned upstream commit. They
 correct premultiplied alpha, provide native play/stop signals, and fix the
 zero-threshold `happy_kpm` validation without enabling a nonexistent animation.
 
@@ -52,8 +57,8 @@ python3 scripts/validate-sprite.py \
   assets/source/wisp/manifest-movement-v0.7.json
 
 python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-system-v0.9.png \
-  assets/source/wisp/manifest-system-v0.9.json
+  assets/sprites/companion-wisp-system-v0.11.png \
+  assets/source/wisp/manifest-system-v0.11.json
 
 ./scripts/build-renderer.sh
 ./scripts/test-renderer-alpha.sh

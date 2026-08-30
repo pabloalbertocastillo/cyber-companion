@@ -177,9 +177,19 @@ def main() -> int:
         action="store_true",
         help="build the v0.9 system-media atlas instead of the v0.7 movement atlas",
     )
+    parser.add_argument(
+        "--system-presence",
+        action="store_true",
+        help="build the v0.11 media and system-presence atlas",
+    )
     args = parser.parse_args()
 
-    if args.system:
+    if args.system_presence:
+        rig_file = RIG_DIR / "rig-system-v0.11.json"
+        build_dir = REPO_ROOT / "build/rig-system-v0.11"
+        atlas = REPO_ROOT / "assets/sprites/companion-wisp-system-v0.11.png"
+        preview = REPO_ROOT / "assets/previews/companion-wisp-system-v0.11.gif"
+    elif args.system:
         rig_file = RIG_DIR / "rig-system-v0.9.json"
         build_dir = REPO_ROOT / "build/rig-system-v0.9"
         atlas = REPO_ROOT / "assets/sprites/companion-wisp-system-v0.9.png"

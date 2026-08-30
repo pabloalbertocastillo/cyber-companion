@@ -13,7 +13,10 @@ fi
 
 grep -q 'MediaUpdate = (1u << 8u)' "$source_dir/include/graphics/animation.h"
 grep -q 'media_active{false}' "$source_dir/include/platform/update_shared_memory.h"
-grep -q 'Media playback %s' "$source_dir/src/platform/wayland.cpp"
+grep -q 'media playback %s' "$source_dir/src/platform/wayland.cpp"
+grep -q 'SystemUpdate = (1u << 9u)' "$source_dir/include/graphics/animation.h"
+grep -q 'system_busy{false}' "$source_dir/include/platform/update_shared_memory.h"
+grep -q 'System busy started' "$source_dir/src/platform/wayland.cpp"
 
 test_dir=$(mktemp -d)
 trap 'rm -rf -- "$test_dir"' EXIT HUP INT TERM
@@ -26,4 +29,4 @@ ${CXX:-c++} \
     -o "$test_dir/renderer-media-test"
 
 "$test_dir/renderer-media-test"
-printf 'Renderer native-media state test: PASS\n'
+printf 'Renderer native media/system state test: PASS\n'

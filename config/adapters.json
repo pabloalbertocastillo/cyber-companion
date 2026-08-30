@@ -8,6 +8,19 @@
       "settings": {
         "executable": "playerctl"
       }
+    },
+    {
+      "name": "gentoo_system",
+      "type": "linux_system",
+      "enabled": true,
+      "settings": {
+        "interval_seconds": 2,
+        "busy_above": 0.70,
+        "busy_for_seconds": 4,
+        "idle_below": 0.40,
+        "idle_for_seconds": 6,
+        "thermal_warning_c": 80
+      }
     }
   ]
 }

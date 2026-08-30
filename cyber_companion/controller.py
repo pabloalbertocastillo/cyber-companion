@@ -63,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
     bus = EventBus()
 
     def print_event(event: Event) -> None:
+        if event.type == "system.telemetry":
+            return
         print(json.dumps(event.as_dict(), ensure_ascii=False, sort_keys=True), flush=True)
 
     bus.subscribe(print_event)
