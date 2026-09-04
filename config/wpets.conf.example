@@ -1,6 +1,6 @@
-# Cyber Companion Wisp v0.11 native media and system-presence preview
-# Seven 24-frame clips are compiled from a three-layer hierarchical source rig.
-# Media uses Working rows; director-owned system load uses the former Moving rows.
+# Cyber Companion behavior core v0.11 + Wisp Visual v0.12
+# Seven 24-frame clips are rendered deterministically by build-wisp-v2.py.
+# Media uses Working rows; director-owned system load uses Moving compatibility rows.
 # No keyboard_device is intentionally configured.
 
 cat_height=224
@@ -17,10 +17,10 @@ overlay_opacity=0
 
 enable_antialiasing=1
 enable_debug=0
-# Target a 75 Hz compositor refresh rate for smoother translation.
+# Target a 75 Hz compositor refresh rate for smoother state animation.
 fps=75
 
-custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.11.png
+custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.12.png
 animation_name=custom
 custom_idle_frames=24
 custom_start_working_frames=24
@@ -31,7 +31,7 @@ custom_moving_frames=24
 custom_end_moving_frames=24
 custom_mirror_x_moving=1
 
-# 24 interpolated poses at approximately 24 FPS: ~1 s per complete clip.
+# 24 authored poses at approximately 24 FPS: about 1 second per complete clip.
 idle_animation=1
 animation_speed=42
 idle_sleep_timeout=0

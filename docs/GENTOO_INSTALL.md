@@ -18,6 +18,8 @@ gcc --version | head -n 1
 clang --version | head -n 1
 cmake --version | head -n 1
 make --version | head -n 1
+python3 --version
+python3 -c 'import PIL; print("Pillow", PIL.__version__)'
 
 echo
 echo "===== WAYLAND DEVELOPMENT FILES ====="
@@ -33,69 +35,82 @@ command -v hyprctl || echo "hyprctl: missing"
 echo
 echo "===== MONITORS ====="
 hyprctl monitors
-
-echo
-echo "===== EXISTING WPETS/BONGOCAT ====="
-command -v wpets || true
-command -v wpets-all || true
-command -v bongocat || true
-pgrep -a -f 'wpets|bongocat' || true
 ```
 
-Do not install anything until the output has been reviewed. The upstream build
-currently requires CMake 3.24 or newer, GCC 15 or newer **or** Clang 19 or
-newer, Make, `wayland-client` and `libudev`. Only one supported compiler is
-required.
+The upstream renderer requires CMake 3.24 or newer, GCC 15 or newer **or**
+Clang 19 or newer, Make, `wayland-client` and `libudev`. Wisp Visual v0.12 also
+requires Python 3 and Pillow at build time; its generated PNG has no Python or
+Pillow runtime dependency.
 
-## 2. Minimal pinned source build
+On Gentoo, Pillow is normally provided by `dev-python/pillow`. Use the package
+configuration appropriate for the active Python implementation rather than an
+unmanaged system-wide `pip` installation.
 
-The project pins the verified upstream revision in `UPSTREAM.lock`. Build the
-minimal renderer without tests, extra embedded character collections or a
-system-wide installation:
+Run the project diagnostic after dependencies are available:
 
 ```bash
-cd /path/to/cyber-companion
+./scripts/doctor.sh
+```
+
+## 2. Build and inspect the visual atlas
+
+```bash
+python3 scripts/build-wisp-v2.py
+
+python3 scripts/validate-sprite.py \
+  assets/sprites/companion-wisp-system-v0.12.png \
+  assets/source/wisp/manifest-system-v0.12.json
+
+python3 -m unittest discover -s tests
+```
+
+The atlas is a generated local artifact. The source model, manifest and review
+assets remain versioned so the result is reproducible without making the PNG a
+second source of truth.
+
+## 3. Minimal pinned renderer build
+
+```bash
 ./scripts/build-renderer.sh
 ```
 
-The script clones only the upstream renderer into
-`${XDG_DATA_HOME:-$HOME/.local/share}/cyber-companion/wayland-vpets`, unless
-`CYBER_COMPANION_UPSTREAM_SOURCE` overrides it, checks out the pinned commit and
-builds `build-cyber-companion/bongocat`. It applies all checksum-pinned patches
-recorded in `UPSTREAM.lock`, recognizes those exact patches on later builds,
-and stops on any other tracked modification. It does not use `sudo` or install
-files.
+The script generates Visual v0.12 when its atlas is absent, clones the pinned
+upstream renderer under the user's XDG data directory, applies the checksum-
+pinned patches in `UPSTREAM.lock`, and builds without `sudo` or a system-wide
+installation.
 
-Confirm the patched pixel compositor independently:
+Confirm the patched compositor and native state controls independently:
 
 ```bash
 ./scripts/test-renderer-alpha.sh
 ./scripts/test-renderer-media.sh
 ```
 
-## 3. Safe test configuration
+## 4. Safe interactive test
 
-The launcher reads the versioned `config/wpets.conf.example` directly. It
-intentionally omits `keyboard_device`; it does not require membership in the
-`input` group.
+The launcher reads `config/wpets.conf.example` and intentionally omits
+`keyboard_device`; membership in the `input` group is not required.
 
-The current acceptance test uses the generated seven-state Wisp Rig v1 system
-atlas. Monitor selection remains explicit in the launcher and no configuration contains a
-machine-specific absolute asset path.
+```bash
+CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
+```
 
-## 4. Hyprland autostart
+Review idle, media-playing and sustained-system-load states on the intended
+monitor before enabling autostart.
 
-Autostart is deliberately deferred until interactive testing succeeds on both
-monitors. The expected final shape is:
+## 5. Hyprland autostart
+
+Autostart remains deferred until interactive testing succeeds on both monitors.
+The expected final form is:
 
 ```ini
 exec-once = sleep 5 && env CYBER_COMPANION_MONITOR=<monitor-name> /path/to/cyber-companion/scripts/run-system.sh
 ```
 
-The five-second delay avoids a documented layer-order conflict with Waybar.
+The delay avoids a layer-order conflict with Waybar.
 
 ## Rollback
 
-During Phase 0, rollback is simply stopping the test process and removing the
-user configuration directory. No OpenRC service, Hyprland autostart entry or
-system-wide package is created.
+During Phase 0, rollback is stopping the test process, switching back to the
+previous branch or configuration, and deleting the user runtime directory. No
+OpenRC service, Hyprland autostart entry or system-wide package is created.

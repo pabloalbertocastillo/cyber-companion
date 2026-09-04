@@ -1,14 +1,13 @@
 # Wisp source assets
 
-This directory contains the renderer-independent source contract for Wisp v1.
-Do not author directly into the final atlas.
+This directory contains renderer-independent source contracts for Wisp. Do not
+author directly into the final atlas.
 
-Keep the editable master and individual RGBA frame sequences outside the
-generated `assets/sprites/` output until their licensing and production format
-have been selected. Every exported frame must use the canvas, safe zone and
-pivot declared in `manifest.json`.
+Every exported frame must use the canvas, safe zone and pivot declared in its
+manifest. Renderer-specific packing remains a generated step so future
+renderers can reuse the character and animation model.
 
-Expected source sequence names:
+Expected state sequence names:
 
 ```text
 idle/
@@ -20,45 +19,31 @@ moving/
 end_moving/
 ```
 
-The atlas builder will place each sequence on the manifest row and leave unused
-cells fully transparent. Renderer-specific packing must remain a generated step
-so future renderers can reuse the same source animation.
+## Historical acceptance assets
 
-## v0.4 idle acceptance preview
+- v0.4 established the canonical raster, scale and palette.
+- v0.5 and v0.6 tested movement, fixed registration and arm extraction.
+- v0.7/v0.11 Rig v1 introduced hierarchy, pivots, keyframes, native media and
+  upright system-presence states.
 
-`companion-wisp-master-v0.4.png` is the single canonical raster used for every
-frame in `companion-wisp-idle-v0.4.png`. The build script changes only its
-height around the fixed tail pivot; it never regenerates individual poses.
-This makes v0.4 suitable for judging scale, palette, edge quality and timing,
-while movement and system-event states remain intentionally disabled.
+These remain reproducible fallbacks and renderer regression fixtures.
 
-## v0.5 movement acceptance preview
+## v0.12 Visual v2 production candidate
 
-`companion-wisp-movement-v0.5.png` adds `start_moving`, `moving` and
-`end_moving` without regenerating the character. The approved raster rotates
-around one fixed visual center, and adjacent moving-loop frames differ by no
-more than four degrees and four source pixels in height. This version tests
-renderer transitions and autonomous travel before a layered production rig is
-introduced.
+Visual v0.12 replaces the three-layer default with a procedural model under
+`scripts/wisp_v2/`. It reconstructs the same Wisp for every frame at four times
+the target resolution and then downsamples to the renderer cell.
 
-## v0.6 articulated movement acceptance preview
+The model adds:
 
-`companion-wisp-movement-v0.6.png` keeps the approved v0.4 raster identity but
-extracts its two disconnected arm components into a minimal deterministic rig.
-Takeoff and landing now use six eased frames; the arms tuck independently while
-the body tilts into flight. The runtime configuration doubles the displayed
-height from 112 to 224 pixels and slows autonomous travel so the horizontal
-state remains visible long enough to evaluate.
+- faceted armor and controlled holographic bloom;
+- shoulder and elbow articulation;
+- visor and blink micro-animation;
+- a stable energy-tail anchor;
+- media-specific violet beat effects;
+- system-busy scans, data shards and focused posture;
+- exact pixel continuity at all state boundaries.
 
-## v0.7 Rig v1 acceptance preview
-
-`rig-v1/rig.json` replaces hard-coded pose arrays with a renderer-independent
-hierarchy, pivots and animation tracks. Body, left arm and right arm are stored
-as separate full-canvas RGBA layers. `scripts/build-rig-v1.py` interpolates the
-keyframes with smoothstep easing and compiles four clips of 24 frames each.
-
-The arms now travel through a visible 39–67 degree range during flight. A dark
-two-pixel contour supports light wallpapers without changing the canonical
-colors. The source rig remains editable independently from the generated atlas;
-future live renderers can consume the same hierarchy instead of the compiled
-Wayland V-Pets adapter.
+The authoritative contract is `manifest-system-v0.12.json`. The generated
+6144×1344 runtime atlas is intentionally ignored; the source code, manifest and
+review artifacts are versioned.

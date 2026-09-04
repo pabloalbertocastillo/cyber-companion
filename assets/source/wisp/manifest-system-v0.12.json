@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "asset_id": "companion-wisp-system-v0.12",
+  "renderer_profile": "wayland-vpets-5.0.2-system-signals",
+  "status": "visual-v2-acceptance",
+  "image": {
+    "format": "png",
+    "color_mode": "rgba",
+    "bit_depth": 8,
+    "columns": 24,
+    "rows": 7,
+    "cell_width": 256,
+    "cell_height": 192
+  },
+  "safe_zone": {
+    "left": 20,
+    "right": 236,
+    "top": 12,
+    "bottom": 180
+  },
+  "pivot": {
+    "x": 128,
+    "y": 168,
+    "description": "Stable energy-tail desktop anchor"
+  },
+  "states": [
+    {
+      "row": 0,
+      "name": "idle",
+      "frames": 24,
+      "playback": "loop"
+    },
+    {
+      "row": 1,
+      "name": "start_working",
+      "semantic": "media_enter",
+      "frames": 24,
+      "playback": "once"
+    },
+    {
+      "row": 2,
+      "name": "working",
+      "semantic": "media_active",
+      "frames": 24,
+      "playback": "loop"
+    },
+    {
+      "row": 3,
+      "name": "end_working",
+      "semantic": "media_exit",
+      "frames": 24,
+      "playback": "once"
+    },
+    {
+      "row": 4,
+      "name": "start_moving",
+      "semantic": "start_busy",
+      "frames": 24,
+      "playback": "once"
+    },
+    {
+      "row": 5,
+      "name": "moving",
+      "semantic": "busy",
+      "frames": 24,
+      "playback": "loop"
+    },
+    {
+      "row": 6,
+      "name": "end_moving",
+      "semantic": "end_busy",
+      "frames": 24,
+      "playback": "once"
+    }
+  ]
+}

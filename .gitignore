@@ -3,7 +3,11 @@ __pycache__/
 *.py[cod]
 build/
 assets/previews/companion-wisp-system-v0.11.gif
+assets/previews/companion-wisp-system-v0.12.gif
+assets/previews/companion-wisp-v0.12-contact-sheet.png
+assets/previews/companion-wisp-v0.12-still.png
 assets/sprites/companion-wisp-system-v0.11.png
+assets/sprites/companion-wisp-system-v0.12.png
 *.log
 *.pid
 config/local.conf
