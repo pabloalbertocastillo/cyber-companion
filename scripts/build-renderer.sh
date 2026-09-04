@@ -14,13 +14,13 @@ alpha_patch=$repo_root/$CYBER_COMPANION_PATCH
 media_patch=$repo_root/$CYBER_COMPANION_MEDIA_PATCH
 config_patch=$repo_root/$CYBER_COMPANION_CONFIG_PATCH
 system_patch=$repo_root/$CYBER_COMPANION_SYSTEM_PATCH
-system_atlas=$repo_root/assets/sprites/companion-wisp-system-v0.11.png
+system_atlas=$repo_root/assets/sprites/companion-wisp-system-v0.12.png
 
-# Generated atlases are build artifacts. The rig and its layers are the
-# versioned source of truth, so compile the active atlas on demand.
+# The atlas is a local build artifact. Visual v2 renders all source geometry,
+# lighting and state effects deterministically before the renderer is built.
 if [ ! -f "$system_atlas" ]; then
-    printf 'Generating Wisp v0.11 system-presence atlas...\n'
-    "$repo_root/scripts/build-rig-v1.py" --system-presence
+    printf 'Generating Wisp Visual v0.12 atlas...\n'
+    "$repo_root/scripts/build-wisp-v2.py" --atlas-only
 fi
 
 if [ ! -e "$source_dir" ]; then

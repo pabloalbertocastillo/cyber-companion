@@ -3,14 +3,25 @@
 Cyber Companion is a metamorphic, holographic entity that reacts to the state
 of a Gentoo Linux + Hyprland desktop.
 
-The project starts as a lightweight desktop companion and is intentionally
-designed to evolve into a visible interface for a local or remote AI system.
-
-The v0.11 behavior core separates system adapters, normalized events, domain
-state, declarative behavior policy and renderer commands. Wayland V-Pets is the
-first renderer backend, not the owner of Wisp's behavior.
+The v0.11 behavior core separates adapters, normalized events, domain state,
+declarative behavior policy and renderer commands. Wayland V-Pets is the first
+renderer backend, not the owner of Wisp's behavior.
 
 ![Cyber Companion concept](assets/concept/companion-concept-v1.webp)
+
+## Wisp Visual v0.12
+
+Visual v0.12 is a graphics-only upgrade built on the stable v0.11 behavior
+contract. It replaces the default three-raster acceptance rig with a
+deterministic character compositor rendered at four times the target
+resolution and downsampled into the same seven-row Wayland V-Pets atlas.
+
+![Wisp Visual v0.12](assets/previews/companion-wisp-system-v0.12.gif)
+
+The avatar now has faceted armor, controlled holographic bloom, a breathing
+core, visor micro-expression, shoulder and elbow articulation, an energy tail,
+media-specific violet accents, and a separate upright system-processing visual
+language. See [Wisp Visual v0.12](docs/VISUAL_V2.md).
 
 ## Manifestations
 
@@ -20,7 +31,8 @@ first renderer backend, not the owner of Wisp's behavior.
 - **Guardian** — rare, full-system manifestation.
 - **Swarm** — transition between manifestations.
 
-These are forms of the same distributed consciousness, not separate characters.
+These are forms of the same distributed consciousness, not separate
+characters.
 
 ## Current status
 
@@ -30,19 +42,12 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - [x] Event-driven architecture
 - [x] Gentoo/Hyprland installation plan
 - [x] Safe Wayland V-Pets configuration without keyboard capture
-- [x] Validate Wayland V-Pets on the target system
-- [x] Define the Wisp v1 production sprite contract
-- [x] Produce a deterministic six-frame Wisp idle preview
-- [x] Produce deterministic takeoff, flight and landing previews
-- [x] Produce Wisp Rig v1 with independently animated arms
-- [x] Correct Wayland ARGB premultiplied-alpha composition
+- [x] Wisp Rig v1 and renderer alpha correction
+- [x] Native MPRIS and Linux system-presence states
+- [x] Declarative priority-based behavior director
+- [x] Wisp Visual v0.12 deterministic high-resolution renderer
+- [ ] Accept Visual v0.12 on the target Gentoo desktop and both wallpapers
 - [ ] Replace the compiled atlas adapter with live rig composition
-- [x] Add the MPRIS event bus for all compatible media players
-- [x] Add native play/pause renderer state without configuration reloads
-- [x] Add a declarative, priority-based behavior director
-- [x] Disable renderer-owned autonomous travel
-- [x] Add Linux CPU, memory and temperature telemetry with busy hysteresis
-- [x] Repurpose rotating movement rows as upright system-processing animation
 - [ ] Add libvirt, network, idle and thermal adapters
 - [ ] Add an AI adapter
 
@@ -52,78 +57,78 @@ The project is in **Phase 0: foundation and compatibility validation**.
 - No global keyboard capture by default.
 - Events are independent from avatar rendering.
 - Renderers and avatars are replaceable.
-- Minimal dependencies and no systemd requirement.
+- Minimal runtime dependencies and no systemd requirement.
 - Configuration and generated state remain in XDG user directories.
 - System changes must be reversible.
+- Visual output must be deterministic and mechanically testable.
 
 ## Repository layout
 
 ```text
-assets/          Character concepts, source manifests and local generated atlases
-config/          Example renderer configuration
-docs/            Architecture and Gentoo installation notes
-scripts/         Diagnostics, validation and future runtime helpers
+assets/            Character concepts, manifests and review artifacts
+config/            Example renderer and behavior configuration
+cyber_companion/   Event, state, behavior and renderer-command core
+docs/              Architecture, visual and Gentoo installation notes
+renderer/          Patches for the pinned Wayland renderer
+scripts/           Build, validation, diagnostics and runtime helpers
+tests/             Python and isolated renderer contract tests
 ```
 
 Start with [the Gentoo installation guide](docs/GENTOO_INSTALL.md). Do not add
 your user to the `input` group for this project.
 
-Avatar production follows [the Wisp sprite specification](docs/SPRITE_SPEC.md).
-The default configuration now runs the v0.11 Rig v1 system-presence preview. Its
-three-layer source rig separates the body and both arms, stores pivots and
-keyframes in JSON, and compiles seven 24-frame clips with smooth interpolation.
-The media sequence dances upright, while sustained system load activates a
-separate upright processing loop with hysteresis. The renderer build applies
-versioned alpha, media and system-state patches, while the sprite retains the doubled 224 px display
-height. A third patch corrects upstream's zero-threshold `happy_kpm` validation.
-The v0.3 atlas remains only as a rejected visual prototype.
+## Build the active avatar
 
-Rebuild and validate the preview with:
+Pillow is required only to generate the visual assets. The runtime consumes the
+resulting PNG exactly as before.
 
 ```bash
-./scripts/build-rig-v1.py
-./scripts/build-rig-v1.py --system
-./scripts/build-rig-v1.py --system-presence
-python3 scripts/validate-sprite.py \
-  assets/sprites/companion-wisp-system-v0.11.png \
-  assets/source/wisp/manifest-system-v0.11.json
+python3 scripts/build-wisp-v2.py
 
+python3 scripts/validate-sprite.py \
+  assets/sprites/companion-wisp-system-v0.12.png \
+  assets/source/wisp/manifest-system-v0.12.json
+
+python3 -m unittest discover -s tests
 ./scripts/test-renderer-alpha.sh
 ./scripts/test-renderer-media.sh
 ```
 
-The v0.11 PNG and GIF are generated artifacts rather than repository inputs.
-`build-renderer.sh` creates them automatically when absent; the versioned rig,
-layers and manifest remain the reproducible source of truth.
+The compiler creates a 6144×1344 RGBA atlas containing seven 24-frame states,
+an animated review GIF, a transparent still and a multi-background contact
+sheet. The runtime atlas is ignored because the procedural model and manifest
+are the reproducible source of truth. Rig v1 remains available as a fallback
+and renderer regression fixture.
 
 ## Upstream renderer candidate
 
 Phase 0 evaluates [Wayland V-Pets](https://github.com/furudbat/wayland-vpets),
-an MIT-licensed Wayland overlay that explicitly documents Hyprland,
-multi-monitor support and runtime custom PNG sprite sheets. Cyber Companion does
-not vendor or redistribute the upstream project. The reproducible build applies
-four narrow local patches recorded in `UPSTREAM.lock`; it never silently switches
-upstream revisions.
+an MIT-licensed Wayland overlay that documents Hyprland, multi-monitor support
+and runtime custom PNG sprite sheets. Cyber Companion does not vendor or
+redistribute the upstream project. The reproducible build applies four narrow
+local patches recorded in `UPSTREAM.lock`.
 
-The renderer remains an adapter, not the core architecture. If it cannot expose
-the state control needed for music and future integrations, it can be replaced
-without redesigning the character or event model.
+Build the pinned renderer with the active visual atlas:
+
+```bash
+./scripts/build-renderer.sh
+```
 
 ## Live system connection
 
-The controller listens to every MPRIS-compatible media source through
-`playerctl --all-players --follow`, emits normalized events and switches
-Wayland V-Pets between calm and media activity through native renderer signals.
-Spotify, browser media, VLC and mpv share the same adapter. It writes only a
-private state snapshot and requires neither root nor keyboard access.
+The controller listens to every MPRIS-compatible media source, emits normalized
+events and switches Wayland V-Pets between calm, media and system-presence
+states through native renderer signals.
 
 ```bash
 CYBER_COMPANION_MONITOR=<monitor-name> ./scripts/run-system.sh
 ```
 
-Pause and resume any MPRIS player while the launcher runs. Detailed behavior
-and runtime paths are documented in
-[System integration v0.11](docs/SYSTEM_INTEGRATION.md).
+## Versioning note
+
+`v0.11` identifies the current behavior core. `Visual v0.12` identifies the
+active graphics asset and build pipeline. The visual upgrade deliberately does
+not alter event semantics.
 
 ## Licensing
 

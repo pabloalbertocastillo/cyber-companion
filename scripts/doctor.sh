@@ -31,8 +31,19 @@ printf 'Cyber Companion doctor\n\n'
 check_required_command hyprctl 'required for Hyprland integration'
 check_required_command make 'required to build Wayland V-Pets'
 check_required_command pkg-config 'required to locate Wayland libraries'
-check_optional_command playerctl 'planned MPRIS adapter'
+check_required_command python3 'required to build Wisp Visual v0.12'
+check_optional_command playerctl 'required by the current MPRIS system launcher'
 check_optional_command virsh 'planned Windows VM adapter'
+
+if command -v python3 >/dev/null 2>&1; then
+    if pillow_version=$(python3 -c 'import PIL; print(PIL.__version__)' 2>/dev/null); then
+        printf '[OK]   %-14s %s\n' Pillow "$pillow_version"
+        ok=$((ok + 1))
+    else
+        printf '[MISS] %-14s required at build time for Wisp Visual v0.12\n' Pillow
+        required_missing=$((required_missing + 1))
+    fi
+fi
 
 if command -v cmake >/dev/null 2>&1; then
     cmake_version=$(cmake --version | sed -n '1s/.* //p')

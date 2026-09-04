@@ -4,6 +4,7 @@ __pycache__/
 build/
 assets/previews/companion-wisp-system-v0.11.gif
 assets/sprites/companion-wisp-system-v0.11.png
+assets/sprites/companion-wisp-system-v0.12.png
 *.log
 *.pid
 config/local.conf
