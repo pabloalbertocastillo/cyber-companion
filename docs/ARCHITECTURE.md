@@ -1,17 +1,74 @@
 # Architecture
 
-Cyber Companion separates system observation, behavior and rendering.
+Cyber Companion is evolving from a desktop-avatar vertical slice into a
+local-first system companion platform.
+
+The currently implemented v0.11 behavior core remains:
 
 ```text
-system adapters -> event bus -> domain state -> behavior director
-                                            -> presentation command
-                                            -> renderer adapter
+system adapters -> synchronous event bus -> mutable domain snapshot
+                -> declarative behavior director
+                -> one presentation command
+                -> Wayland V-Pets signal adapter
 ```
 
-## Event envelope
+This is a valid compatibility architecture for Wisp Visual v0.12. It correctly
+keeps MPRIS/Linux observation separate from behavior selection and keeps
+renderer signals out of adapters. Its current limitations are documented in
+[the v0.13 architecture review](platform/ARCHITECTURE_REVIEW.md).
 
-Every integration should emit a small normalized event instead of controlling
-the avatar directly.
+The proposed implementation target is defined by the
+[Platform Architecture v0.13 package](platform/README.md).
+
+## Target architecture
+
+```mermaid
+flowchart LR
+    Sources[Linux / Hyprland / MPRIS / libvirt / network]
+    Adapters[Sensor adapters]
+    Ingress[Validated Event v2 ingress]
+    State[Typed reducers and fresh domain state]
+    Insight[Detectors and attention manager]
+    Intent[Intent and task service]
+    AI[Optional AI gateway]
+    Capability[Capability registry]
+    Policy[Policy and exact approval]
+    Executor[Audited executor]
+    Presentation[Presentation broker]
+    Outputs[Avatar / message / ccctl / optional voice]
+
+    Sources --> Adapters --> Ingress --> State
+    State --> Insight --> Presentation --> Outputs
+    State --> Intent
+    Insight --> Intent
+    Intent <--> AI
+    Intent --> Capability --> Policy --> Executor --> Ingress
+    Intent --> Presentation
+```
+
+The implementation style is a local modular monolith. One daemon owns event
+ordering, state, policy and audit. The renderer, local model server and selected
+plugins may remain supervised external processes. This avoids distributed-system
+complexity while retaining explicit ports and replaceable adapters.
+
+## Architectural invariants
+
+1. Monitoring and critical alerts work with AI disabled.
+2. Adapters publish facts; they do not choose animations, messages or actions.
+3. Typed reducers are the only authority for current observed state.
+4. AI output is untrusted and can explain or propose, never grant permission or
+   execute directly.
+5. Every side effect passes through capability registry, deterministic policy,
+   exact approval when required, executor and audit.
+6. Wayland V-Pets is an ambient renderer, not the application shell.
+7. Textual channels exist for critical information and approvals.
+8. No private context leaves the machine without explicit egress policy.
+9. Every queue is bounded; slow/failing components are isolated.
+10. Contracts and persisted schemas are independently versioned and replayable.
+
+## Current event contract
+
+The implemented v1 event is intentionally small:
 
 ```json
 {
@@ -26,35 +83,14 @@ the avatar directly.
 }
 ```
 
-Initial event families:
+Core v2 will add identity, schema, subject, ordering, causality, privacy,
+freshness and retention while preserving a compatibility mapper for built-in
+v1 adapters. See [Events, State and Attention](platform/EVENTS_STATE_AND_ATTENTION.md).
 
-| Source | Events |
-|---|---|
-| MPRIS | `media.playing`, `media.paused`, `media.stopped` |
-| libvirt | `vm.starting`, `vm.running`, `vm.stopping`, `vm.off` |
-| network | `network.online`, `network.offline` |
-| system | `system.busy`, `system.thermal_alert`, `system.idle` |
-| session | `session.locked`, `session.active`, `session.shutdown` |
-| AI (future) | `ai.listening`, `ai.thinking`, `ai.speaking`, `ai.error` |
+## Current behavior contract
 
-## Behavior configuration
-
-Behavior policy lives in `config/behaviors.json`; adapters and renderers do not
-contain priority policy. Each rule reads a versioned domain-state path, declares
-its priority and produces a renderer-neutral presentation command. New adapters
-can add domains without changing the director.
-
-The highest-priority matching rule wins. Ties are resolved by stable behavior
-name ordering, which makes selection deterministic and testable.
-
-Enabled inputs live in `config/adapters.json`. Every adapter implements the same
-`run`/`stop` lifecycle, publishes only normalized events and runs independently.
-The event bus serializes concurrent publication so the state model observes a
-total event order. Adapter-specific settings remain inside that adapter's entry.
-
-## Presentation command
-
-The state engine resolves competing events into one presentation command:
+`config/behaviors.json` remains the current compatibility policy. It selects one
+renderer-neutral command using deterministic priority and stable name ordering:
 
 ```json
 {
@@ -66,77 +102,90 @@ The state engine resolves competing events into one presentation command:
 }
 ```
 
-Priority order for the first implementation:
+The target design keeps deterministic presentation policy but introduces
+separate detectors, insight lifecycle and attention management. Not every fact
+should become an avatar state, and not every important insight should interrupt
+the user.
 
-1. Critical thermal or system errors
-2. Session shutdown or lock
-3. VM transitions and network loss
-4. Direct interaction
-5. Music
-6. Idle
+## Capability and action boundary
 
-## Renderer contract
+Cyber Companion distinguishes:
 
-A renderer adapter receives presentation commands. It must not query MPRIS,
-libvirt or system state itself. This permits several implementations:
+- sensors: continuous read-only observations;
+- queries: bounded on-demand read-only inspection;
+- actions: operations with side effects.
 
-- Wayland V-Pets sprite sheets for the first prototype.
-- A custom `wlr-layer-shell` renderer if more control is required.
-- Live2D or another GPU renderer later.
+There is no default generic shell capability. Models and integrations see only
+versioned capability descriptors and may propose plans. Only the executor can
+invoke action implementations after policy and approval. See
+[Capabilities, Actions and Security](platform/CAPABILITIES_SECURITY_AND_ACTIONS.md).
+
+## Optional AI
+
+AI providers sit outside the critical event path. The companion owns context,
+conversation and memory. A local Ollama or llama.cpp server and an optional
+OpenAI Responses provider implement the same internal provider port.
+
+The first AI use is read-only explanation over verified, bounded context. Tool
+and action-plan proposal support is added only after the capability/policy
+boundary and model evaluation harness exist. See [AI and MCP](platform/AI_AND_MCP.md).
+
+## MCP
+
+MCP is used at the interoperability edge to import allowlisted external tools or
+export selected companion resources. It is not the internal event bus, plugin
+supervisor, state model or permission system. Imported tools receive the same
+local risk, policy, approval and audit treatment as native capabilities.
+
+## Presentation
+
+The target presentation broker supports independent channels:
+
+```text
+ambient avatar | textual message/notification | ccctl/control UI | optional voice
+```
+
+Wayland V-Pets remains the initial ambient adapter and consumes semantic states.
+A future custom layer-shell renderer may add bubbles and direct interaction
+without changing domain or action code.
 
 ## Runtime locations
 
 ```text
-$XDG_CONFIG_HOME/cyber-companion/   User configuration
-$XDG_STATE_HOME/cyber-companion/    Current state and logs
-$XDG_RUNTIME_DIR/cyber-companion/   Socket and transient events
-$XDG_DATA_HOME/cyber-companion/     Installed avatar assets
+$XDG_CONFIG_HOME/cyber-companion/   User configuration, no secrets
+$XDG_STATE_HOME/cyber-companion/    SQLite state, retained events and audit
+$XDG_RUNTIME_DIR/cyber-companion/   Owner-only control socket and transient files
+$XDG_DATA_HOME/cyber-companion/     Installed assets and external renderer source
 ```
 
-No component should require root after installation.
+No component requires root in the planned initial generations. Secrets are
+resolved through a secret-provider port and never committed to configuration or
+stored in event payloads.
 
-## v0.11 system presence
+## Migration
 
-The `linux_system` adapter reads `/proc/stat`, `/proc/meminfo` and available
-`/sys/class/hwmon` temperature sensors without root privileges. CPU load uses
-time-based entry and exit hysteresis, so brief spikes do not change Wisp's
-behavior. Thresholds, sampling and dwell times are declared in
-`config/adapters.json`.
+This is not a big-bang rewrite. The delivery sequence is:
 
-`system_busy` has priority 50, above media at 40; thermal alert has priority
-100. The renderer maps the former movement rows to an upright processing
-sequence and disables autonomous travel. All three system-presence rows are
-contract-tested to remain within three degrees of vertical.
+1. Event v2, bounded async backbone, SQLite and supervisor under compatibility
+   adapters;
+2. typed domains, new system adapters, insights, attention and textual output;
+3. local IPC, read-only capabilities, policy, plans, approval and audit;
+4. local AI explanation only;
+5. optional plan proposals, OpenAI provider and MCP;
+6. richer interaction and renderer evolution.
 
-## v0.10 extensible behavior core
+The complete acceptance gates are in the [functional roadmap](platform/ROADMAP.md).
 
-`BehaviorDirector` is the single presentation authority. `StateStore` reduces
-events into independent domain snapshots and persists the last renderer-neutral
-command. `BehaviorEngine` resolves the command from declarative, validated rules.
-The Wayland V-Pets adapter only translates a selected profile into its native
-signal; it does not inspect MPRIS or choose behavior.
+## Decision records
 
-Renderer-owned autonomous movement is disabled. In Wayland V-Pets,
-`movement_radius=0` and `movement_speed=0` are the documented off values. This
-prevents the upstream movement state machine from competing with the director.
+- [ADR-0001: local modular monolith](adr/0001-modular-monolith.md)
+- [ADR-0002: AI is an optional adviser](adr/0002-ai-is-an-optional-adviser.md)
+- [ADR-0003: MCP is an interoperability boundary](adr/0003-mcp-is-an-interoperability-boundary.md)
+- [ADR-0004: Wayland V-Pets is an ambient renderer](adr/0004-wayland-vpets-is-an-ambient-renderer.md)
 
-The first live adapter remains MPRIS. PipeWire audio energy, system load,
-libvirt and network status can be added as separate adapters over the same event
-and domain-state contracts.
+## Security baseline
 
-## v0.9 implementation history
-
-The first implemented vertical slice uses `playerctl --all-players --follow` as an MPRIS
-adapter. `cyber_companion.events.EventBus` delivers normalized events to the
-state store, which persists a private JSON snapshot and selects a presentation
-profile. The Wayland V-Pets adapter translates that profile into a native
-media-state signal; neither the MPRIS adapter nor the state store knows renderer
-signals or animation rows.
-
-See [System integration v0.10](SYSTEM_INTEGRATION.md) for the current runtime contract.
-
-## Security boundary
-
-The initial version will not read `/dev/input/event*`, join the `input` group,
-capture screen contents or listen to the microphone. Future capabilities must be
-optional adapters with explicit configuration.
+The current version does not read `/dev/input/event*`, join the `input` group,
+capture screen contents or listen to the microphone. Future microphone, screen,
+remote access or privileged capabilities require separate opt-in adapters,
+threat models and ADRs. None is implied by adding AI.
