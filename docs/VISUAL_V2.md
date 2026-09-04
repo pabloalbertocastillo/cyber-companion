@@ -7,8 +7,6 @@ normalized events, behavior priorities, native renderer signals or state
 names. It replaces the default three-layer acceptance rig with a deterministic,
 supersampled compositor that produces the same Wayland V-Pets atlas contract.
 
-![Wisp Visual v0.12 review](../assets/previews/companion-wisp-v0.12-contact-sheet.png)
-
 ## Why the pipeline changed
 
 Rig v1 proved state transitions, registration and renderer integration, but its

@@ -16,12 +16,12 @@ contract. It replaces the default three-raster acceptance rig with a
 deterministic character compositor rendered at four times the target
 resolution and downsampled into the same seven-row Wayland V-Pets atlas.
 
-![Wisp Visual v0.12](assets/previews/companion-wisp-system-v0.12.gif)
-
 The avatar now has faceted armor, controlled holographic bloom, a breathing
 core, visor micro-expression, shoulder and elbow articulation, an energy tail,
 media-specific violet accents, and a separate upright system-processing visual
-language. See [Wisp Visual v0.12](docs/VISUAL_V2.md).
+language. See [Wisp Visual v0.12](docs/VISUAL_V2.md). Run the visual builder to
+produce the animated review, canonical still and multi-background contact
+sheet locally.
 
 ## Manifestations
 
@@ -65,7 +65,7 @@ The project is in **Phase 0: foundation and compatibility validation**.
 ## Repository layout
 
 ```text
-assets/            Character concepts, manifests and review artifacts
+assets/            Character concepts and manifests
 config/            Example renderer and behavior configuration
 cyber_companion/   Event, state, behavior and renderer-command core
 docs/              Architecture, visual and Gentoo installation notes
@@ -96,9 +96,9 @@ python3 -m unittest discover -s tests
 
 The compiler creates a 6144×1344 RGBA atlas containing seven 24-frame states,
 an animated review GIF, a transparent still and a multi-background contact
-sheet. The runtime atlas is ignored because the procedural model and manifest
-are the reproducible source of truth. Rig v1 remains available as a fallback
-and renderer regression fixture.
+sheet. These outputs are ignored because the procedural model and manifest are
+the reproducible source of truth. Rig v1 remains available as a fallback and
+renderer regression fixture.
 
 ## Upstream renderer candidate
 
