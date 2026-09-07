@@ -9,7 +9,7 @@ renderer backend, not the owner of Wisp's behavior.
 
 ![Cyber Companion concept](assets/concept/companion-concept-v1.webp)
 
-## Platform Architecture v0.13
+## Platform Architecture v0.13 / v0.13.1 review
 
 Architecture v0.13 defines the next functional generation before runtime code
 is added. Cyber Companion will evolve as a local modular monolith with a bounded
@@ -30,6 +30,14 @@ Start with the [Platform Architecture v0.13 index](docs/platform/README.md), the
 [current architecture review](docs/platform/ARCHITECTURE_REVIEW.md) and the
 [functional roadmap](docs/platform/ROADMAP.md). This architecture package is a
 design-only change; implementation follows in small vertical slices.
+
+The [2026-09-07 follow-up review](docs/platform/REVIEW_2026-09-07.md)
+audits the first Event v2 contract PR, records reproduced validation gaps and
+clarifies [runtime recovery and integration](docs/platform/RUNTIME_INTEGRATION_CONTRACT.md).
+The [desktop interaction design](docs/platform/DESKTOP_INTERACTION.md) brings a
+native panel, monitor/session awareness and interactive avatar evaluation into
+the first functional generation. Existing open PRs are a stack; this design is
+not an installed release and the new interaction is not yet implemented.
 
 ## Wisp Visual v0.12
 
@@ -70,13 +78,16 @@ functional-platform architecture.
 - [x] Declarative priority-based behavior director
 - [x] Wisp Visual v0.12 deterministic high-resolution renderer
 - [x] Platform Architecture v0.13 design, security boundary, ADRs and roadmap
+- [x] Initial Event v2 envelope/compatibility code in draft PR #4 (not wired into runtime)
+- [x] v0.13.1 runtime/desktop review and native interaction design
+- [ ] Close strict validation gaps and the existing stale sprite-test expectation
 - [ ] Accept Visual v0.12 on the target Gentoo desktop and both wallpapers
 - [ ] Implement Core v2 event/state/persistence/supervision foundation
 - [ ] Add typed system awareness, insights, attention and textual output
 - [ ] Add safe queries, capabilities, policy, approvals and audit
 - [ ] Add optional local AI explanation provider
 - [ ] Add optional OpenAI and MCP adapters
-- [ ] Evaluate a richer interactive layer-shell renderer
+- [ ] Deliver native panel and evaluate interactive layer-shell renderer during A2
 
 ## Design principles
 

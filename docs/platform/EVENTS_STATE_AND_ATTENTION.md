@@ -2,6 +2,10 @@
 
 Status: **proposed contract for Core v2**
 
+See the [v0.13.1 runtime contract](RUNTIME_INTEGRATION_CONTRACT.md) for strict
+validation, shared privacy labels, transactional commit/replay limits, sequence
+reservation, freshness rules and failure semantics.
+
 ## 1. Separate facts, commands and presentations
 
 The current project uses normalized events correctly, but future implementation
@@ -273,8 +277,10 @@ new -> active -> acknowledged -> snoozed -> active -> resolved -> archived
 ```
 
 Updates with the same deduplication key enrich the existing insight instead of
-creating notification storms. Resolution may be detector-driven, user-driven or
-confirmed by a fresh diagnostic query.
+creating notification storms. Observed recovery requires fresh evidence from
+the detector or a successful diagnostic query. User dismissal/acknowledgement is
+an attention preference and must not falsely mark the underlying condition as
+recovered; sensor loss makes it unknown/stale.
 
 ## 10. Attention policy
 
@@ -306,28 +312,22 @@ Example: sustained high CPU.
 
 ```mermaid
 sequenceDiagram
-    participant A as Linux sensor
-    participant I as Event ingress
-    participant R as System reducer
-    participant D as CPU detector
-    participant T as Attention manager
-    participant Q as Read-only query
-    participant P as Presentation broker
+    participant S as Linux sensor
+    participant C as Companion core
+    participant P as Presentation
     participant U as User
     participant AI as Optional AI provider
 
-    A->>I: system.telemetry.sampled
-    I->>R: ordered validated fact
-    R->>D: fresh system snapshot
-    D->>T: CPU saturation candidate
-    T->>Q: optional allowlisted top-process query
-    Q->>I: system.process_snapshot.observed
-    I->>R: correlated fact
-    D->>T: enriched insight update
-    T->>P: warning presentation
-    P-->>U: Wisp cue + concise notification
-    U->>AI: Explain this insight
-    AI-->>U: explanation from bounded context
+    S->>C: Validated observation
+    C->>C: Reduce, detect and apply attention policy
+    C->>P: Insight and evidence
+    P-->>U: Wisp cue and textual detail
+    U->>C: Explain selected insight
+    C->>C: Bounded read-only diagnostics under policy
+    C->>AI: Minimized fresh context
+    AI-->>C: Untrusted explanation
+    C->>P: Validated response or deterministic fallback
+    P-->>U: Explanation with evidence
 ```
 
 The model is invoked only after a real insight or explicit user request. It does

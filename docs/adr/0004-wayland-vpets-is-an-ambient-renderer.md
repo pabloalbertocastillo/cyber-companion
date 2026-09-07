@@ -4,6 +4,10 @@
 - Date: 2026-09-04
 - Decision owners: Cyber Companion maintainers
 
+Follow-up: [ADR-0005](0005-interactive-desktop-shell.md) brings the independent
+native panel and interactive-backend evaluation forward to A2. The renderer
+boundary in this ADR remains unchanged.
+
 ## Context
 
 Wayland V-Pets has proven that Wisp can run as a lightweight Hyprland overlay,

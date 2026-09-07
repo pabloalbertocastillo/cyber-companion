@@ -3,6 +3,10 @@
 Status: **proposed provider and interoperability design**  
 Review date: **2026-09-04**
 
+The [2026-09-07 runtime clarification](RUNTIME_INTEGRATION_CONTRACT.md#8-ai-resource-and-egress-constraints)
+adds local-server egress controls, resource/cancellation limits and the distinction
+between `store:false` and provider retention. AI is still unimplemented here.
+
 ## 1. Product role of AI
 
 AI is an optional cognitive adapter, not the foundation or control plane of
@@ -195,6 +199,12 @@ service management are the priority. Its OpenAI-compatible API includes
 `/v1/responses`, streaming and function calling; its Responses compatibility is
 non-stateful, which aligns with Cyber Companion owning context and memory.
 
+The first implementation candidate should use Ollama's native `/api/chat` with
+a schema supplied through `format`, then validate results locally. Compatibility
+endpoints remain optional adapters, not proof that providers have identical
+behavior. Enable a specific installed model only after the target-host evaluation.
+[Ollama structured outputs](https://docs.ollama.com/capabilities/structured-outputs).
+
 ### llama.cpp adapter
 
 `llama-server` is appropriate when direct control over GGUF models,
@@ -214,6 +224,8 @@ and must be tested rather than assumed.
 - no filesystem, shell or network tools inside the model server;
 - resource telemetry so inference load becomes visible system context;
 - model upgrades treated as behavioral changes requiring re-evaluation.
+- explicitly disabled cloud features for local-only operation; a loopback API
+  can otherwise proxy remote inference. See [Ollama controls](https://docs.ollama.com/faq).
 
 The first local-AI release uses **explanation only**. Deterministic workflows
 gather read-only diagnostics; the model explains a bounded context. Autonomous

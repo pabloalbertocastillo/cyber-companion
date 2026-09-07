@@ -2,6 +2,11 @@
 
 Status: **proposed for v0.13 implementation**
 
+The [v0.13.1 runtime contract](RUNTIME_INTEGRATION_CONTRACT.md) specifies admission,
+commit/replay, clock, failure and IPC semantics. The [desktop design](DESKTOP_INTERACTION.md)
+and ADR-0005 bring the native interface into A2. Those clarifications take
+precedence where this initial target left choices open.
+
 ## 1. Architectural style
 
 Cyber Companion will be a **local-first modular monolith**. One user daemon owns
@@ -23,7 +28,7 @@ contracts in this document are not.
 ## 2. System context
 
 ```mermaid
-flowchart LR
+flowchart TD
     OS[Gentoo / Linux / Hyprland]
     Apps[Desktop apps and media]
     VM[libvirt / Windows VM]
@@ -479,7 +484,8 @@ The following scenarios become automated acceptance tests over time:
 10. Switch AI providers; no domain, plan or presentation contract changes.
 11. Import an MCP tool; it receives the same policy and audit treatment as a
     native capability.
-12. Restart during an action; idempotency and audit reveal the exact outcome.
+12. Restart during an action; audit distinguishes a verified outcome from
+    `outcome_unknown`, with no blind retry of non-idempotent operations.
 
 ## 9. Non-goals
 
