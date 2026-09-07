@@ -3,41 +3,38 @@
 Cyber Companion is a metamorphic, holographic entity that reacts to the state
 of a Gentoo Linux + Hyprland desktop.
 
-The v0.11 behavior core separates adapters, normalized events, domain state,
-declarative behavior policy and renderer commands. Wayland V-Pets is the first
-renderer backend, not the owner of Wisp's behavior.
+## Wisp Desktop v0.14
 
-![Cyber Companion concept](assets/concept/companion-concept-v1.webp)
+A native GTK4 companion console with a separate local daemon, live Linux
+observations, temporal alerts, evidence-based explanations, durable preferences,
+a private control API and optional local Ollama inference. The Wayland avatar
+supports click, menu, drag, monitor selection and reduced motion.
 
-## Platform Architecture v0.13 / v0.13.1 review
+![Wisp Desktop — native GTK demo](docs/previews/wisp-v0.14.png)
 
-Architecture v0.13 defines the next functional generation before runtime code
-is added. Cyber Companion will evolve as a local modular monolith with a bounded
-asynchronous event backbone, typed/fresh domain state, proactive insights, an
-attention manager, local control API, versioned capabilities, deterministic
-policy, exact approvals, audited execution and optional AI providers.
+```bash
+python3 scripts/desktop-doctor.py
+python3 scripts/build-wisp-v2.py --atlas-only --jobs 2
+scripts/run-desktop.sh
+```
 
-The architecture makes two boundaries explicit:
+Read the [desktop setup and usage guide (Español)](docs/DESKTOP_V014.md) for
+dependencies, launchers, Hyprland integration, local AI and verification limits.
+The service runs independently of the interface and every model provider.
+This release does not perform OS mutations or connect to a ChatGPT account.
 
-- the avatar is an ambient presentation channel, not the application;
-- AI is an optional adviser/planner, not the control plane.
+### Architecture and implementation
 
-Monitoring and critical alerts must work with the renderer, Internet and every
-model provider unavailable. No model can invoke an OS implementation directly;
-side effects pass through capability registry, policy, approval and executor.
+The [v0.14 implementation status](docs/platform/IMPLEMENTATION_V014.md) maps the
+running components to the [platform architecture](docs/platform/README.md).
+The [v0.13.1 review](docs/platform/REVIEW_2026-09-07.md) records the preceding
+contract audit; v0.14 corrects those validation gaps and adds the first runtime
+and desktop slice. Historical architecture documents describe the remaining
+target, including capabilities and provider extensions.
 
-Start with the [Platform Architecture v0.13 index](docs/platform/README.md), the
-[current architecture review](docs/platform/ARCHITECTURE_REVIEW.md) and the
-[functional roadmap](docs/platform/ROADMAP.md). This architecture package is a
-design-only change; implementation follows in small vertical slices.
-
-The [2026-09-07 follow-up review](docs/platform/REVIEW_2026-09-07.md)
-audits the first Event v2 contract PR, records reproduced validation gaps and
-clarifies [runtime recovery and integration](docs/platform/RUNTIME_INTEGRATION_CONTRACT.md).
-The [desktop interaction design](docs/platform/DESKTOP_INTERACTION.md) brings a
-native panel, monitor/session awareness and interactive avatar evaluation into
-the first functional generation. Existing open PRs are a stack; this design is
-not an installed release and the new interaction is not yet implemented.
+The implementation is on `codex/wisp-desktop-v0.14`, stacked on the architecture
+PR #5. It is a reviewable source release; it has not been installed on your
+Gentoo/Hyprland host. See the guide for the outstanding host acceptance checks.
 
 ## Wisp Visual v0.12
 

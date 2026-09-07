@@ -1,0 +1,26 @@
+name: Desktop contracts
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  linux-runtime:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Native test dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-pil python3-gi python3-cairo python3-gi-cairo gir1.2-gtk-4.0 xvfb
+      - name: Contracts, detectors, storage and real Unix IPC
+        run: /usr/bin/python3 -m unittest discover -s tests -v
+      - name: Daemon process lifecycle
+        run: /usr/bin/python3 scripts/smoke-desktop.py
+      - name: Build reproducible Wisp atlas
+        run: /usr/bin/python3 scripts/build-wisp-v2.py --atlas-only --jobs 2
+      - name: Native GTK smoke
+        env:
+          GSK_RENDERER: cairo
+          GTK_A11Y: none
+        run: xvfb-run -a /usr/bin/python3 scripts/smoke-ui.py
