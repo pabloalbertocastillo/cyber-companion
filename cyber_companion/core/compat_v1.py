@@ -8,6 +8,7 @@ from typing import Mapping
 from cyber_companion.events import Event
 
 from .events import DeliveryClass, EventV2, PrivacyClass, RetentionClass
+from .validation import number
 
 
 class CompatibilityError(ValueError):
@@ -99,6 +100,54 @@ for _event_type in ("adapter.error", "adapter.invalid_data", "adapter.disconnect
         DeliveryClass.ORDERED, RetentionClass.OPERATIONAL, None, _ADAPTER_FIELDS,
     )
 
+for _source in ("linux_system", "mpris"):
+    _RULES[(_source, "adapter.failed")] = _Rule(
+        "component.health.changed", f"adapter://{_source.replace('_', '-')}/local",
+        f"component/{_source}", "cc.component.health@2", PrivacyClass.SENSITIVE,
+        DeliveryClass.ORDERED, RetentionClass.OPERATIONAL, None, _ADAPTER_FIELDS,
+    )
+
+
+def validate_payload(source: str, event_type: str, data: dict) -> None:
+    if event_type.startswith("system."):
+        required = {"cpu_ratio", "memory_ratio", "busy", "thermal_alert", "temperature_c"}
+        if not required <= data.keys():
+            raise CompatibilityError("incomplete system observation")
+        if not all(number(data[k], 0, 1) for k in ("cpu_ratio", "memory_ratio")):
+            raise CompatibilityError("invalid system ratios")
+        if any(type(data[k]) is not bool for k in ("busy", "thermal_alert")):
+            raise CompatibilityError("invalid system flags")
+        if data["temperature_c"] is not None and not number(data["temperature_c"], -50, 200):
+            raise CompatibilityError("invalid temperature")
+        if event_type == "system.busy" and not data["busy"] or event_type == "system.idle" and data["busy"]:
+            raise CompatibilityError("inconsistent busy transition")
+    elif event_type.startswith("media."):
+        if data.get("status") not in ("playing", "paused", "stopped"):
+            raise CompatibilityError("invalid media status")
+        expected = event_type.removeprefix("media.")
+        if expected in ("playing", "paused", "stopped") and data["status"] != expected:
+            raise CompatibilityError("inconsistent media transition")
+        for key in ("instance", "player", "track_id", "artist", "title"):
+            if key in data and (type(data[key]) is not str or len(data[key]) > 2048):
+                raise CompatibilityError("invalid media text")
+        for key in ("players", "active_players"):
+            if key in data:
+                if type(data[key]) is not list or len(data[key]) > 32:
+                    raise CompatibilityError("invalid player inventory")
+                for player in data[key]:
+                    if type(player) is not dict or set(player) - {"instance", "player", "status", "track_id", "artist", "title"}:
+                        raise CompatibilityError("invalid player record")
+                    validate_payload(source, "media.updated", player)
+        if "changed_player" in data:
+            if type(data["changed_player"]) is not dict:
+                raise CompatibilityError("invalid changed player")
+            validate_payload(source, "media.updated", data["changed_player"])
+    else:
+        if not data or ("error" in data and (type(data["error"]) is not str or len(data["error"]) > 4096)):
+            raise CompatibilityError("invalid component failure")
+        if "returncode" in data and data["returncode"] is not None and type(data["returncode"]) is not int:
+            raise CompatibilityError("invalid return code")
+
 
 class V1CompatibilityMapper:
     """Strict mapper for built-in v1 adapters.
@@ -108,11 +157,17 @@ class V1CompatibilityMapper:
     ingress responsibility, so the caller supplies the accepted sequence.
     """
 
+    def __init__(self, instances: Mapping[str, str] | None = None) -> None:
+        self.instances = {"linux_system": "linux_system", "mpris": "mpris", **(instances or {})}
+        if any(value not in ("linux_system", "mpris") for value in self.instances.values()):
+            raise CompatibilityError("unknown component type")
+
     def map(self, event: Event, *, sequence: int, observed_at: str | None = None) -> EventV2:
         if event.version != 1:
             raise CompatibilityError(f"expected v1 event, received version {event.version}")
 
-        rule = _RULES.get((event.source, event.type))
+        source = self.instances.get(event.source)
+        rule = _RULES.get((source, event.type))
         if rule is None:
             raise CompatibilityError(f"no v2 compatibility rule for {event.source}:{event.type}")
 
@@ -122,9 +177,14 @@ class V1CompatibilityMapper:
             fields = ", ".join(sorted(unknown))
             raise CompatibilityError(f"unknown fields for {event.source}:{event.type}: {fields}")
 
+        validate_payload(source, event.type, data)
+        if event.type.startswith("adapter."):
+            data = {**data, "state": "failed" if event.type == "adapter.failed" else "degraded",
+                    "error_kind": event.type.removeprefix("adapter.")}
+
         return EventV2.create(
             event_type=rule.event_type,
-            source=rule.source,
+            source=rule.source if event.source == source else rule.source.rsplit("/", 1)[0] + "/" + event.source,
             subject=rule.subject,
             sequence=sequence,
             schema=rule.schema,
@@ -138,7 +198,7 @@ class V1CompatibilityMapper:
         )
 
     def supports(self, source: str, event_type: str) -> bool:
-        return (source, event_type) in _RULES
+        return (self.instances.get(source), event_type) in _RULES
 
     def known_events(self) -> tuple[tuple[str, str], ...]:
         return tuple(sorted(_RULES))

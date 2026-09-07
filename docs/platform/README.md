@@ -1,6 +1,10 @@
 # Cyber Companion Platform Architecture v0.13 / v0.13.1
 
-Status: **proposed architecture; initial v2 contracts exist in draft PR #4, runtime migration pending**
+Status: **target architecture; first runtime and native desktop slice implemented in v0.14**
+
+See [implementation status and remaining scope](IMPLEMENTATION_V014.md) and
+[desktop setup](../DESKTOP_V014.md) for what runs now. The reviews below preserve
+the evidence and design decisions recorded before that implementation.
 
 Date: **2026-09-04; follow-up review 2026-09-07**
 

@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "storage_paths": ["/"],
+  "sensors": ["system", "storage", "network", "media", "desktop", "session"],
+  "notifications": true,
+  "ollama_model": "",
+  "ollama_local_only_confirmed": false
+}

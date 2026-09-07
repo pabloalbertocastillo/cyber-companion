@@ -41,7 +41,7 @@ class EventV2ContractTests(unittest.TestCase):
             subject="host/local",
             schema="cc.system.telemetry@2",
             data={},
-            privacy=PrivacyClass.LOCAL,
+            privacy=PrivacyClass.LOCAL_PRIVATE,
             delivery=DeliveryClass.LATEST_VALUE,
             retention=RetentionClass.EPHEMERAL,
         )
@@ -83,7 +83,7 @@ class CompatibilityMapperTests(unittest.TestCase):
         self.assertEqual(mapped.schema, "cc.system.telemetry@2")
         self.assertEqual(mapped.delivery, DeliveryClass.LATEST_VALUE)
         self.assertEqual(mapped.ttl_ms, 6000)
-        self.assertEqual(mapped.occurred_at, source.timestamp)
+        self.assertEqual(mapped.occurred_at, "2026-09-04T18:15:02.000Z")
         self.assertEqual(mapped.sequence, 4812)
         self.assertEqual(source.type, "system.telemetry")
 
@@ -123,6 +123,8 @@ class CompatibilityMapperTests(unittest.TestCase):
 
     def test_all_current_builtin_event_identities_are_declared(self) -> None:
         expected = {
+            ("linux_system", "adapter.failed"),
+            ("mpris", "adapter.failed"),
             ("linux_system", "system.telemetry"),
             ("linux_system", "system.busy"),
             ("linux_system", "system.idle"),

@@ -7,11 +7,13 @@ the invariant fields required before an event may enter Core v2.
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, fields
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Mapping
 from uuid import uuid4
+
+from .validation import encode, freeze, thaw
 
 
 SPECVERSION = "2.0"
@@ -19,8 +21,8 @@ SPECVERSION = "2.0"
 
 class PrivacyClass(str, Enum):
     PUBLIC = "public"
-    LOCAL = "local"
     LOCAL_PRIVATE = "local_private"
+    SENSITIVE = "sensitive"
     SECRET = "secret"
 
 
@@ -55,11 +57,11 @@ def new_event_id() -> str:
 
 
 def _require_nonempty(name: str, value: str) -> None:
-    if not value or not value.strip():
+    if type(value) is not str or not value.strip() or len(value) > 4096:
         raise ValueError(f"{name} must be a non-empty string")
 
 
-def _validate_timestamp(name: str, value: str) -> None:
+def _validate_timestamp(name: str, value: str) -> str:
     _require_nonempty(name, value)
     candidate = value[:-1] + "+00:00" if value.endswith("Z") else value
     try:
@@ -68,6 +70,7 @@ def _validate_timestamp(name: str, value: str) -> None:
         raise ValueError(f"{name} must be an ISO-8601 timestamp") from error
     if parsed.tzinfo is None:
         raise ValueError(f"{name} must include a timezone")
+    return parsed.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 @dataclass(frozen=True)
@@ -94,16 +97,22 @@ class EventV2:
             raise ValueError(f"unsupported event specversion: {self.specversion!r}")
         for name in ("id", "type", "source", "subject", "correlation_id", "schema"):
             _require_nonempty(name, getattr(self, name))
-        _validate_timestamp("occurred_at", self.occurred_at)
-        _validate_timestamp("observed_at", self.observed_at)
-        if self.sequence < 1:
+        for name in ("occurred_at", "observed_at"):
+            object.__setattr__(self, name, _validate_timestamp(name, getattr(self, name)))
+        if type(self.sequence) is not int or not 1 <= self.sequence < 2**63:
             raise ValueError("sequence must be >= 1")
         if self.causation_id is not None:
             _require_nonempty("causation_id", self.causation_id)
-        if self.ttl_ms is not None and self.ttl_ms <= 0:
+        if self.ttl_ms is not None and (type(self.ttl_ms) is not int or not 0 < self.ttl_ms <= 86400000):
             raise ValueError("ttl_ms must be positive when present")
         if not isinstance(self.data, Mapping):
             raise TypeError("data must be a mapping")
+        for name, enum in (("privacy", PrivacyClass), ("delivery", DeliveryClass), ("retention", RetentionClass)):
+            object.__setattr__(self, name, enum(getattr(self, name)))
+        if self.privacy is PrivacyClass.SECRET:
+            raise ValueError("secrets cannot enter events")
+        encode(self.data)
+        object.__setattr__(self, "data", freeze(self.data))
 
     @classmethod
     def create(
@@ -146,7 +155,7 @@ class EventV2:
         )
 
     def as_dict(self) -> dict[str, object]:
-        result = asdict(self)
+        result = {field.name: thaw(getattr(self, field.name)) for field in fields(self)}
         result["privacy"] = self.privacy.value
         result["delivery"] = self.delivery.value
         result["retention"] = self.retention.value
