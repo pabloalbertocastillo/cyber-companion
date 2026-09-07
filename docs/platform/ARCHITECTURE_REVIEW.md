@@ -3,6 +3,10 @@
 Status: **review complete**  
 Reviewed ref: `codex/wisp-visual-v0.12` at `1c823ffb42a46ff445470ce0f5a344503d1b2873`
 
+This is the original review of the visual branch. See the
+[2026-09-07 review](REVIEW_2026-09-07.md) for the subsequent Event v2 implementation,
+reproduced findings, current test status and desktop-interaction scope.
+
 ## Executive assessment
 
 The current repository is a strong vertical slice. It has already avoided the

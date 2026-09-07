@@ -2,6 +2,9 @@
 
 Status: **proposed security and execution contract**
 
+The [v0.13.1 runtime clarification](RUNTIME_INTEGRATION_CONTRACT.md) defines the
+shared privacy vocabulary, durable-audit failure behavior and local IPC boundary.
+
 ## 1. Security objective
 
 Cyber Companion should become helpful without becoming an ambient root shell.
@@ -193,7 +196,9 @@ A local plugin cannot mark deletion as `read_only` and bypass policy.
 | Local read-only query with allowed privacy | Allow and audit summary |
 | Sensitive read-only query requested by user | Allow locally; redact model context according to policy |
 | Background read-only enrichment from an allowlisted detector | Allow with strict timeout/rate/output limits |
-| Reversible user-level action explicitly requested in the current interaction | Require concise confirmation initially; policy may later remember a narrow preference |
+| Exact reversible companion preference explicitly selected in the UI (mute/snooze) | Allow under local policy and record; no duplicate confirmation |
+| Reversible external-system action proposed by a model or background workflow | Evaluate separately; require confirmation unless a narrow existing grant covers the exact effect |
+| Exact reversible external-system action directly requested by the user | Allow only when registered policy authorizes that specific effect; otherwise require confirmation |
 | Stateful local action | Require exact approval |
 | External communication or cloud data disclosure | Require configured egress policy and, when sensitive, exact approval |
 | Destructive action | Require exact approval; no background execution |
@@ -219,6 +224,11 @@ Approval is scoped to an immutable request digest containing:
 The UI must show what will happen, not a vague “allow Wisp?” prompt. Any change
 to capability, arguments, destination or expired precondition invalidates the
 approval.
+
+Resolve dynamic selectors such as `active` player or a VM display name to a
+stable target identity before requesting approval. Revalidate that exact identity
+and its preconditions immediately before dispatch; a different active player
+cannot silently inherit the previous approval.
 
 Approval results:
 
@@ -352,6 +362,12 @@ In-process plugins are reserved for small, trusted, reviewed components. A
 plugin that loads a native library, has a volatile dependency, connects to a
 remote service or handles broader credentials should run as a supervised child
 process behind a framed local protocol.
+
+A subprocess by itself is not an OS sandbox: declarations do not prevent native
+code from using the user's filesystem or network. Such code must be trusted and
+reviewed until an explicit, tested OS sandbox is supplied. Do not advertise
+manifest permissions or same-UID socket authentication as isolation from a
+compromised same-user process.
 
 Isolation levels:
 

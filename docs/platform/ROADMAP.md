@@ -2,6 +2,12 @@
 
 Status: **proposed delivery sequence**
 
+Updated **2026-09-07**: [reviewed state](REVIEW_2026-09-07.md),
+[runtime contract](RUNTIME_INTEGRATION_CONTRACT.md) and
+[desktop interaction](DESKTOP_INTERACTION.md) refine the gates below.
+PR #4 implements only the initial envelope/compatibility portion of A1.
+All four preceding PRs remain drafts at this review; none is a host acceptance.
+
 ## Delivery principle
 
 Implementation follows small vertical slices. Every slice must be useful,
@@ -37,6 +43,14 @@ Acceptance:
 ## Phase A1 — Core v2 foundation
 
 Goal: replace prototype runtime mechanics without changing visible behavior.
+
+First gate, before adding persistence or connecting v2 to the controller:
+
+- close review findings F03–F06/F08: deep payload immutability, actual runtime
+  type/enum validation, payload schemas, component failures and privacy labels;
+- fix the existing sprite-test expectation for v0.12 (F10);
+- validate thermal/sensor-loss transition semantics before allowing coalescing;
+- record a green relevant baseline with the new rejection/mutation scenarios.
 
 Deliverables:
 
@@ -86,6 +100,19 @@ ccctl insight snooze <id> --for 30m
 ccctl mute --for 1h
 ```
 
+Deliver A2 in user-visible slices rather than waiting for every integration:
+
+| Slice | Functional scope | Acceptance |
+|---|---|---|
+| A2a | System/storage insight, textual output, status/health API and native GTK panel | Inspect evidence, acknowledge/snooze; useful with AI off and legacy avatar selected |
+| A2b | Hyprland/session context, network and libvirt adapters, each independently optional | Correct monitor/fullscreen/lock/resume behavior; explicit unavailable sources |
+| A2c | Optional interactive Wisp backend using existing atlas; hover/click/monitor placement | Input/focus, output/scale and performance gate on actual Gentoo desktop |
+
+The panel/CLI is the first interface even if A2c needs more work. A2 preferences
+use narrow core policy and event audit; external OS mutations wait for A3.
+See [desktop interaction](DESKTOP_INTERACTION.md) for controls, native stack,
+visual evolution, unsupported-feature behavior and rollback.
+
 Initial scenarios:
 
 1. sustained CPU pressure and recovery;
@@ -104,6 +131,9 @@ Acceptance gate:
 - session lock and quiet-hour behavior is deterministic;
 - no adapter chooses presentation or notification directly;
 - all core usefulness works with renderer stopped and AI disabled.
+- sensitive surfaces hide on locked/unknown sessions; the notification server's
+  delivery policy is not treated as proof that the user saw an alert;
+- new GUI dependencies remain optional and outside core imports.
 
 ## Phase A3 — Safe queries and action framework
 
@@ -220,15 +250,16 @@ Acceptance gate:
 ## Phase A6 — Rich interaction and renderer evolution
 
 Goal: improve the human interface after functionality and safety contracts are
-stable.
+stable. The basic native panel and interactive-avatar evaluation now belong to
+A2 under ADR-0005; A6 expands them after real desktop acceptance.
 
 Candidates:
 
 - command palette launched by a Hyprland binding;
-- compact history/insight/approval panel;
+- richer history and accessible approval presentation beyond the A2 panel;
 - actionable notification buttons;
 - optional speech-to-text/TTS adapters with explicit activation;
-- click/hover interaction through a custom layer-shell renderer;
+- richer manipulation/animation beyond the accepted A2 click/hover backend;
 - richer live animation state and lip/status synchronization;
 - multiple manifestations (Core, Wisp, Sentinel, Guardian, Swarm) driven by
   semantic presentation, not app-specific logic.
@@ -245,7 +276,9 @@ Acceptance gate:
 
 To avoid large mixed PRs, Phase A1 should be split approximately as follows:
 
-1. `core/event-v2-contracts` — types, schemas and compatibility mapping;
+1. `core/event-v2-contracts` — initial types/mapping exist in PR #4; complete
+   strict schemas, immutability, failure identities and relevant test baseline
+   in a focused follow-up before connecting the runtime;
 2. `core/sqlite-store` — migrations, event/snapshot repositories and tests;
 3. `core/async-backbone` — bounded queues, ordered reducer lane and coalescing;
 4. `runtime/component-supervisor` — health, lifecycle, backoff and diagnostics;
@@ -254,6 +287,13 @@ To avoid large mixed PRs, Phase A1 should be split approximately as follows:
 
 No PR should simultaneously redesign events, add an AI SDK and introduce OS
 actions.
+
+Minimal first demonstration after A1/A2a: observe a controlled CPU/storage
+condition, show one insight in Wisp + panel, inspect its evidence, snooze it,
+observe real recovery, stop the renderer and continue querying status. Include
+a sensor-loss scenario to prove unknown does not masquerade as recovery. This
+is the first release outcome; a general plugin SDK or all integrations are not
+prerequisites for that demonstration.
 
 ## Versioning and migration policy
 
