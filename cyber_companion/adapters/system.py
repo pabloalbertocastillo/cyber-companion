@@ -49,7 +49,8 @@ def read_cpu_times(path: Path = Path("/proc/stat")) -> tuple[int, int]:
         raise ValueError("invalid /proc/stat cpu line")
     values = [int(value) for value in fields[1:]]
     idle = values[3] + (values[4] if len(values) > 4 else 0)
-    return sum(values), idle
+    # guest/guest_nice are already included in user/nice.
+    return sum(values[:8]), idle
 
 
 def cpu_ratio(previous: tuple[int, int], current: tuple[int, int]) -> float:
@@ -68,8 +69,8 @@ def read_memory_ratio(path: Path = Path("/proc/meminfo")) -> float:
             values[key] = int(remainder.split()[0])
     total = values.get("MemTotal", 0)
     available = values.get("MemAvailable", 0)
-    if total <= 0:
-        raise ValueError("MemTotal is missing from /proc/meminfo")
+    if total <= 0 or "MemAvailable" not in values:
+        raise ValueError("MemTotal or MemAvailable is missing from /proc/meminfo")
     return max(0.0, min(1.0, 1.0 - available / total))
 
 

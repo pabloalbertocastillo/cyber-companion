@@ -80,7 +80,7 @@ class StateAndRendererTests(unittest.TestCase):
         config = (root / "config/wpets.conf.example").read_text(encoding="utf-8")
         lines = config.splitlines()
         self.assertLess(
-            lines.index("custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.11.png"),
+            lines.index("custom_sprite_sheet_filename=assets/sprites/companion-wisp-system-v0.12.png"),
             lines.index("animation_name=custom"),
         )
         self.assertIn("happy_kpm=0", lines)
