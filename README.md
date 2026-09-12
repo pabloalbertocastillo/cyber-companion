@@ -10,6 +10,20 @@ observations, temporal alerts, evidence-based explanations, durable preferences,
 a private control API and optional local Ollama inference. The Wayland avatar
 supports click, menu, drag, monitor selection and reduced motion.
 
+The live avatar is a dark, horned holographic apparition with a carved mask,
+a luminous core and a fractured spectral mantle. Its projected obsidian facets
+have directional lighting; its heart, mantle and antennae respond to CPU,
+memory and the local network. Its visible size eases with load and hover,
+and pointer parallax adds depth. The enlarged avatar carries CPU/memory
+readouts on its mantle, workspace and network markings on its mask and collar,
+and media activity and running-VM counts in its lower filaments. It fades to
+8% opacity when inactive and wakes on hover, drag, menu or panel interaction.
+A stationary input surface keeps dragging smooth across monitors; the chosen
+monitor and position are saved together on release.
+Colors distinguish calm, media, processing and attention states. Readouts only
+use fresh observations. See [live desktop integration](docs/LIVE_DESKTOP.md)
+for session startup, shortcuts and host validation.
+
 ![Wisp Desktop — native GTK demo](docs/previews/wisp-v0.14.png)
 
 ```bash

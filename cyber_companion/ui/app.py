@@ -2,8 +2,8 @@
 from __future__ import annotations
 import argparse
 import concurrent.futures
-import math
 import os
+import math
 import time
 from pathlib import Path
 
@@ -37,6 +37,9 @@ from ..ipc import call
 from ..core.model import Model
 from ..assistant import explain
 from .animation import Animation
+from .hologram import telemetry, anatomy_scale, paint_entity
+from .interaction import (AVATAR_WIDTH, AVATAR_HEIGHT, Output, drag_placement,
+                          AmbientVisibility)
 
 ROOT = Path(__file__).resolve().parents[2]
 ATLAS = ROOT / "assets/sprites/companion-wisp-system-v0.12.png"
@@ -145,68 +148,84 @@ class Wisp(Gtk.DrawingArea):
         self.presence = "idle"
         self.reduced = False
         self.last_tick = 0
-        self.set_content_width(294 if hero else 320)
-        self.set_content_height(266 if hero else 250)
+        self.last_frame = 0
+        self.visibility = AmbientVisibility(time.monotonic())
+        self.interacting = False
+        self.drag_hidden = False
+        self.pose_locked = False
+        self.signal = telemetry(None)
+        self.hovered = False
+        self.visual_scale = .96
+        self.look = [0., 0.]
+        self.look_target = [0., 0.]
+        self.set_content_width(294 if hero else AVATAR_WIDTH)
+        self.set_content_height(280 if hero else AVATAR_HEIGHT)
         self.set_draw_func(self.draw)
         self.add_tick_callback(self.tick)
-        self.set_tooltip_text("Wisp · Abre tu compañero")
+        motion = Gtk.EventControllerMotion()
+        motion.connect("enter", self.pointer_enter)
+        motion.connect("leave", self.pointer_leave)
+        motion.connect("motion", self.pointer_motion)
+        self.add_controller(motion)
+        self.set_cursor_from_name("grab" if not hero else "pointer")
+
+    def pointer_enter(self, *_):
+        self.hovered = True
+        self.queue_draw()
+
+    def pointer_leave(self, *_):
+        self.hovered = False
+        self.look_target = [0., 0.]
+        self.queue_draw()
+
+    def pointer_motion(self, controller, x, y):
+        self.look_target = [max(-1.,min(1.,(x-self.get_width()/2)/100)),
+                            max(-1.,min(1.,(y-self.get_height()/2)/100))]
 
     def tick(self, widget, frame_clock):
         now = frame_clock.get_frame_time()
-        interval = 250000 if self.reduced else 42000
-        if self.get_mapped() and now - self.last_tick >= interval:
+        dt = min(.1, (now-self.last_frame)/1_000_000) if self.last_frame else 1/60
+        self.last_frame = now
+        active = self.hero or self.hovered or self.interacting
+        previous = self.visibility.opacity
+        self.visibility.step(time.monotonic(), dt, active, self.reduced)
+        if self.visibility.opacity != previous:
+            self.queue_draw()
+        interval = 16000 if active else (125000 if self.visibility.opacity < .1 else 42000)
+        if not self.reduced and self.get_mapped() and now - self.last_tick >= interval:
+            # Gentle interpolation keeps changes in load and pointer position fluid.
+            elapsed = min(.1, (now-self.last_tick)/1_000_000)
+            weight = 1-math.exp(-elapsed/ .25)
+            if not self.pose_locked:
+                self.visual_scale += (anatomy_scale(self.signal,self.hovered)-self.visual_scale)*weight
+                self.look = [a+(b-a)*weight for a,b in zip(self.look,self.look_target)]
             self.last_tick = now
             self.queue_draw()
         return True
 
-    def update(self, presence, reduced):
+    def update(self, presence, reduced, snapshot=None):
         self.presence, self.reduced = presence, reduced
         self.animation.select(presence)
+        self.signal = telemetry(snapshot)
+        if reduced:
+            self.visual_scale = anatomy_scale(self.signal,reduced=True)
+            self.look = [0.,0.]
+        mount = self.signal["storage"]
+        detail = f"\n{mount['path']}: {mount['available']/1024**3:.1f} GiB libres" if mount else ""
+        self.set_tooltip_text("Clic para abrir · Arrastra entre pantallas · Clic derecho para opciones\nNúcleo: CPU · Manto: CPU y memoria · Cuernos: ruta de red local\nMáscara: escritorio · Filamentos violetas: multimedia · VM: máquinas activas\nNúcleo ámbar: temperatura cerca del límite" + detail)
+        self.queue_draw()
 
     def draw(self, area, cr, width, height):
-        warning = self.presence == "warning"
-        accent = (.98, .69, .38) if warning else (.3, .88, .79)
-        phase = 0 if self.reduced else time.monotonic() * .3
-        if self.hero:
-            # Presentation-only orbital geometry; no system sampling in the view.
-            cr.save()
-            cr.translate(width/2, height*.51)
-            for radius, opacity in ((99, .12), (118, .08)):
-                cr.set_source_rgba(*accent, opacity)
-                cr.set_line_width(1)
-                cr.arc(0, 0, radius, 0, math.tau)
-                cr.stroke()
-            cr.set_source_rgba(*accent, .4)
-            cr.set_dash([3, 10])
-            cr.arc(0, 0, 118, phase, phase + 4.7)
-            cr.stroke()
-            cr.set_dash([])
-            for i in range(4):
-                angle = phase + i*math.pi/2
-                cr.arc(math.cos(angle)*99, math.sin(angle)*99, 2, 0, math.tau)
-                cr.fill()
-            cr.restore()
+        if self.drag_hidden:
+            return
+        seconds = 0 if self.reduced else time.monotonic()
+        cr.push_group()
         if self.atlas:
             row, frame = self.animation.frame(self.reduced)
-            scale = min(width/256, height/192) * (1.03 if self.hero else 1.0)
-            x, y = (width-256*scale)/2, (height-192*scale)/2
-            cr.save()
-            cr.translate(x, y)
-            cr.scale(scale, scale)
-            cr.rectangle(0, 0, 256, 192)
-            cr.clip()
-            cr.set_source_surface(self.atlas, -frame*256, -row*192)
-            cr.paint()
-            cr.restore()
-        else:
-            cr.set_source_rgba(*accent, .8)
-            cr.arc(width/2, height/2, 35, 0, math.tau)
-            cr.stroke()
-        if warning:
-            cr.set_source_rgba(*accent, .8)
-            cr.set_line_width(2)
-            cr.arc(width/2, height*.87, 5, 0, math.tau)
-            cr.stroke()
+            paint_entity(cr,self.atlas,row,frame,width,height,self.signal,seconds,
+                         self.visual_scale,self.look,self.reduced,self.presence)
+        cr.pop_group_to_source()
+        cr.paint_with_alpha(1. if self.hero else self.visibility.opacity)
 
 
 def demo_snapshot():
@@ -241,6 +260,8 @@ class Application(Gtk.Application):
         self.answer_generation = 0
         self.atlas = None
         self.overlay = None
+        self.drag_previews = []
+        self.pending_drag_prefs = None
         self.window = None
         self.explicit_open = not args.avatar_only
         self.monitor_options = [""]
@@ -288,7 +309,7 @@ class Application(Gtk.Application):
             GLib.timeout_add(2500, self.capture)
 
     def build_panel(self):
-        self.window = Gtk.ApplicationWindow(application=self, title="Wisp · Cyber Companion")
+        self.window = Gtk.ApplicationWindow(application=self, title="Cyber Companion")
         self.window.add_css_class("wisp-panel")
         self.window.set_default_size(1060, 840)
         self.window.connect("close-request", self.close_panel)
@@ -301,8 +322,7 @@ class Application(Gtk.Application):
         header = box(False, 12)
         header.append(label("◈", "brand-mark"))
         brand = box(True, 2)
-        brand.append(label("WISP", "brand"))
-        brand.append(label("C Y B E R   C O M P A N I O N", "overline"))
+        brand.append(label("Cyber Companion", "brand"))
         header.append(brand)
         spacer = box(); spacer.set_hexpand(True); header.append(spacer)
         self.connection = label("CONECTANDO", "connection")
@@ -433,26 +453,39 @@ class Application(Gtk.Application):
         Layer.set_layer(self.overlay, Layer.Layer.TOP)
         Layer.set_anchor(self.overlay, Layer.Edge.RIGHT, True)
         Layer.set_anchor(self.overlay, Layer.Edge.BOTTOM, True)
-        Layer.set_exclusive_zone(self.overlay, 0)
+        # Absolute monitor margins must include panels' reserved areas.
+        Layer.set_exclusive_zone(self.overlay, -1)
         Layer.set_keyboard_mode(self.overlay, Layer.KeyboardMode.NONE)
         self.avatar = Wisp(self.atlas)
         self.overlay.set_child(self.avatar)
         self.overlay.connect("realize", self.input_region)
         self.avatar.connect("resize", lambda *_: self.input_region())
         click = Gtk.GestureClick(); click.set_button(0)
+        click.connect("pressed", lambda *_: setattr(self, "dragged", False))
         click.connect("released", self.avatar_click); self.avatar.add_controller(click)
         drag = Gtk.GestureDrag(); drag.connect("drag-begin", self.drag_begin)
         drag.connect("drag-update", self.drag_update); drag.connect("drag-end", self.drag_end)
+        drag.connect("cancel", self.drag_cancel)
         self.avatar.add_controller(drag)
+        click.group(drag)
+        self.avatar.add_tick_callback(self.drag_frame)
         self.dragged = False
+        self.dragging = False
         self.drag_origin = (32, 24)
         self.drag_position = self.drag_origin
         menu = box(True, 6)
-        menu.append(button("Abrir Wisp", lambda _: self.open_panel(), "flat"))
+        menu.append(button("Abrir Cyber Companion", lambda _: self.open_panel(), "flat"))
         menu.append(button("Silenciar · 1 h", self.mute, "flat"))
+        menu.append(button("Reducir / activar movimiento", lambda _: self.submit("preferences.set", {"reduced_motion": not (self.snapshot or {}).get("preferences", {}).get("reduced_motion", False)}), "flat"))
         menu.append(button("Ocultar avatar", lambda _: self.submit("preferences.set", {"avatar_visible": False}), "flat"))
         menu.append(button("Salir de la interfaz", lambda _: self.quit(), "flat"))
         self.popover = Gtk.Popover(); self.popover.set_child(menu); self.popover.set_parent(self.avatar)
+        self.popover.connect("notify::visible", lambda *_: self.avatar_activity())
+        self.window.connect("notify::visible", lambda *_: self.avatar_activity())
+
+    def avatar_activity(self):
+        self.avatar.interacting = (self.dragging or self.popover.get_visible()
+                                   or self.window.get_visible())
 
     def input_region(self, *_):
         if self.overlay and self.overlay.get_surface():
@@ -471,26 +504,140 @@ class Application(Gtk.Application):
             else:
                 self.open_panel()
 
-    def drag_begin(self, *args):
+    def output_layout(self):
+        monitors = Gdk.Display.get_default().get_monitors()
+        result = []
+        for monitor in monitors:
+            rect = monitor.get_geometry()
+            result.append((monitor, Output(monitor.get_connector(), rect.x, rect.y,
+                                           rect.width, rect.height)))
+        return result
+
+    def drag_begin(self, gesture=None, x=0, y=0):
         self.dragged = False
-        p = (self.snapshot or {}).get("preferences", {})
-        self.drag_origin = (p.get("margin_x", 32), p.get("margin_y", 24))
+        self.dragging = True
+        self.drag_delta = (0., 0.)
+        self.drag_applied = None
+        self.drag_hotspot = (x, y)
+        self.drag_monitor = (Layer.get_monitor(self.overlay) or
+            Gdk.Display.get_default().get_monitor_at_surface(self.overlay.get_surface()))
+        if self.drag_monitor is None:
+            self.dragging = False
+            return
+        rect = self.drag_monitor.get_geometry()
+        self.drag_origin = (Layer.get_margin(self.overlay, Layer.Edge.RIGHT),
+                            Layer.get_margin(self.overlay, Layer.Edge.BOTTOM))
         self.drag_position = self.drag_origin
+        self.drag_size = (self.avatar.get_width(), self.avatar.get_height())
+        self.drag_top_left = (rect.x+rect.width-self.drag_size[0]-self.drag_origin[0],
+                              rect.y+rect.height-self.drag_size[1]-self.drag_origin[1])
+        self.avatar_activity()
+
+    def build_drag_previews(self):
+        # Keep the input surface stationary until release: moving/remapping it
+        # feeds its own motion back into GestureDrag and can lose Wayland's grab.
+        # Only these input-transparent visual copies cross output boundaries.
+        for monitor, output in self.output_layout():
+            window = Gtk.ApplicationWindow(application=self)
+            window.add_css_class("wisp-avatar")
+            window.set_decorated(False)
+            Layer.init_for_window(window)
+            Layer.set_namespace(window, "cyber-companion-drag")
+            Layer.set_layer(window, Layer.Layer.OVERLAY)
+            Layer.set_anchor(window, Layer.Edge.RIGHT, True)
+            Layer.set_anchor(window, Layer.Edge.BOTTOM, True)
+            Layer.set_exclusive_zone(window, -1)
+            Layer.set_keyboard_mode(window, Layer.KeyboardMode.NONE)
+            Layer.set_monitor(window, monitor)
+            preview = Wisp(self.atlas)
+            preview.animation = self.avatar.animation
+            preview.update(self.avatar.presence, self.avatar.reduced, self.snapshot)
+            preview.visual_scale = self.avatar.visual_scale
+            preview.look = self.avatar.look[:]
+            preview.pose_locked = True
+            preview.interacting = True
+            window.set_child(preview)
+            window.connect("realize", lambda win: win.get_surface().set_input_region(cairo.Region()))
+            self.drag_previews.append((window, preview, monitor, output))
+        self.avatar.drag_hidden = True
+        self.avatar.pose_locked = True
+        self.avatar.queue_draw()
+        self.avatar.set_cursor_from_name("grabbing")
 
     def drag_update(self, gesture, dx, dy):
-        if abs(dx)+abs(dy) < 6:
+        if not self.dragging:
             return
-        self.dragged = True
-        monitor = Gdk.Display.get_default().get_monitor_at_surface(self.overlay.get_surface())
-        rect = monitor.get_geometry() if monitor else None
-        max_x, max_y = (min(2048,max(0, rect.width-320)), min(2048,max(0, rect.height-250))) if rect else (1000, 600)
-        self.drag_position = (int(max(0,min(max_x,self.drag_origin[0]-dx))), int(max(0,min(max_y,self.drag_origin[1]-dy))))
-        Layer.set_margin(self.overlay, Layer.Edge.RIGHT, self.drag_position[0])
-        Layer.set_margin(self.overlay, Layer.Edge.BOTTOM, self.drag_position[1])
+        if not self.dragged and dx*dx+dy*dy < 36:
+            return
+        if not self.dragged:
+            self.dragged = True
+            self.build_drag_previews()
+        self.drag_delta = (dx, dy)
 
-    def drag_end(self, *_):
-        if self.dragged:
-            self.submit("preferences.set", dict(zip(("margin_x", "margin_y"), self.drag_position)))
+    def drag_frame(self, *_):
+        if not self.dragging or not self.dragged or self.drag_delta == self.drag_applied:
+            return True
+        self.drag_applied = self.drag_delta
+        left = self.drag_top_left[0]+self.drag_delta[0]
+        top = self.drag_top_left[1]+self.drag_delta[1]
+        width, height = self.drag_size
+        pointer = (left+self.drag_hotspot[0], top+self.drag_hotspot[1])
+        layout = self.output_layout()
+        placement = drag_placement([o for _, o in layout], pointer, self.drag_hotspot, self.drag_size)
+        if placement is None:
+            self.drag_cancel()
+            return True
+        name, mx, my = placement
+        self.drag_monitor = next(m for m, o in layout if o.name == name)
+        self.drag_position = (mx, my)
+        for window, preview, monitor, output in self.drag_previews:
+            intersects = (monitor.is_valid() and left < output.x+output.width and
+                left+width > output.x and top < output.y+output.height and top+height > output.y)
+            if intersects:
+                Layer.set_margin(window, Layer.Edge.RIGHT, round(output.x+output.width-left-width))
+                Layer.set_margin(window, Layer.Edge.BOTTOM, round(output.y+output.height-top-height))
+            window.set_visible(intersects)
+        return True
+
+    def finish_drag_visuals(self):
+        self.dragging = False
+        self.avatar.drag_hidden = False
+        self.avatar.pose_locked = False
+        self.avatar.set_cursor_from_name("grab")
+        self.avatar.visibility.last_active = time.monotonic()
+        self.avatar.queue_draw()
+        for window, *_ in self.drag_previews:
+            window.destroy()
+        self.drag_previews.clear()
+        self.avatar_activity()
+
+    def drag_end(self, gesture=None, dx=None, dy=None):
+        if not self.dragging:
+            return
+        if dx is not None and dy is not None:
+            self.drag_update(gesture, dx, dy)
+        self.drag_frame()
+        if not self.dragging:
+            return
+        # Remapping the released source can synchronously cancel its old gesture.
+        self.dragging = False
+        if self.dragged and self.drag_monitor.is_valid():
+            prefs = {"monitor": self.drag_monitor.get_connector(),
+                     "margin_x": self.drag_position[0], "margin_y": self.drag_position[1]}
+            self.pending_drag_prefs = prefs
+            Layer.set_monitor(self.overlay, self.drag_monitor)
+            Layer.set_margin(self.overlay, Layer.Edge.RIGHT, prefs["margin_x"])
+            Layer.set_margin(self.overlay, Layer.Edge.BOTTOM, prefs["margin_y"])
+            def saved(value, error):
+                if error and self.pending_drag_prefs is prefs:
+                    self.pending_drag_prefs = None
+                return self.command_done(value, error)
+            self.submit("preferences.set", prefs, callback=saved)
+        self.finish_drag_visuals()
+
+    def drag_cancel(self, *_):
+        if self.dragging:
+            self.finish_drag_visuals()
 
     def show_page(self, name):
         self.stack.set_visible_child_name(name)
@@ -545,6 +692,7 @@ class Application(Gtk.Application):
             for metric in self.metrics.values():
                 metric.update(None, "—", "sin conexión")
             if self.overlay:
+                self.drag_cancel()
                 self.overlay.set_visible(False)
             self.ask_button.set_sensitive(False)
             return False
@@ -579,7 +727,7 @@ class Application(Gtk.Application):
             "unknown": ("Buscando señal.", "Espero lecturas recientes antes de sacar conclusiones."),
         }[presence]
         self.hero_title.set_text(title); self.hero_subtitle.set_text(subtitle)
-        self.wisp.update(presence, prefs["reduced_motion"])
+        self.wisp.update(presence, prefs["reduced_motion"], value)
         media = current("media")
         self.media_label.set_text("♫  " + (media.get("title") or "Reproducción activa") if media.get("status") == "playing" else "◌  Sin reproducción activa")
         desk = current("desktop")
@@ -620,6 +768,11 @@ class Application(Gtk.Application):
             self.answer_generation += 1
             self.response_box.set_visible(False)
         if self.overlay:
+            if self.pending_drag_prefs:
+                if all(prefs.get(k) == v for k, v in self.pending_drag_prefs.items()):
+                    self.pending_drag_prefs = None
+                else:
+                    prefs = dict(prefs, **self.pending_drag_prefs)
             display = Gdk.Display.get_default()
             monitors = display.get_monitors()
             selected = None
@@ -629,15 +782,21 @@ class Application(Gtk.Application):
                     selected = candidate; break
             if selected is None and monitors.get_n_items():
                 selected = monitors.get_item(0)
-            if selected and Layer.get_monitor(self.overlay) != selected:
+            if self.dragging:
+                selected = Layer.get_monitor(self.overlay)
+            if selected and not self.dragging and Layer.get_monitor(self.overlay) != selected:
                 Layer.set_monitor(self.overlay, selected)
-            if selected:
+            if selected and not self.dragging:
                 geometry = selected.get_geometry()
-                Layer.set_margin(self.overlay, Layer.Edge.RIGHT, min(prefs["margin_x"], max(0, geometry.width-320)))
-                Layer.set_margin(self.overlay, Layer.Edge.BOTTOM, min(prefs["margin_y"], max(0, geometry.height-250)))
-            self.avatar.update(presence, prefs["reduced_motion"])
+                Layer.set_margin(self.overlay, Layer.Edge.RIGHT, min(prefs["margin_x"], max(0, geometry.width-self.avatar.get_width())))
+                Layer.set_margin(self.overlay, Layer.Edge.BOTTOM, min(prefs["margin_y"], max(0, geometry.height-self.avatar.get_height())))
+            self.avatar.update(presence, prefs["reduced_motion"], value)
+            for _, preview, *_ in self.drag_previews:
+                preview.update(presence, prefs["reduced_motion"], value)
             fullscreen = desk.get("fullscreen") and (not selected or selected.get_connector() == desk.get("monitor"))
             show = prefs["avatar_visible"] and session.get("locked") is False and not fullscreen
+            if not show:
+                self.drag_cancel()
             self.overlay.set_visible(show)
         return False
 
@@ -700,6 +859,7 @@ class Application(Gtk.Application):
     def monitor_changed(self, widget, *_):
         index = widget.get_selected()
         if not self.updating and index < len(self.monitor_options):
+            self.pending_drag_prefs = None
             self.submit("preferences.set", {"monitor": self.monitor_options[index]})
 
     def avatar_changed(self, widget):
@@ -763,6 +923,7 @@ class Application(Gtk.Application):
     def shutdown(self, *_):
         self.closed = True
         if self.overlay:
+            self.drag_cancel()
             self.popover.unparent()
         self.pool.shutdown(wait=False, cancel_futures=True)
 

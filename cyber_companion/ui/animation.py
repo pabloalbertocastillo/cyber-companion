@@ -31,4 +31,6 @@ class Animation:
             self.since = now
         if reduced:
             return {"idle": 0, "media": 2, "busy": 5}[self.target], 0
-        return self.row, min(23, int((now-self.since)/.042)) if self.transition else int((now-self.since)/.042) % 24
+        # The apparition drifts rather than bouncing through a one-second idle loop.
+        interval = {"idle": .11, "media": .065, "busy": .075}[self.current]
+        return self.row, min(23, int((now-self.since)/.042)) if self.transition else int((now-self.since)/interval) % 24

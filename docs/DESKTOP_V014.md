@@ -54,7 +54,9 @@ python3 scripts/install-desktop.py
 
 El instalador crea lanzadores de usuario en `~/.local/bin` y una entrada en el
 menú. Apuntan al checkout: conserva su ubicación o vuelve a ejecutar el
-instalador al moverlo. No modifica autostart ni configuración de Hyprland.
+instalador al moverlo. Por defecto no modifica autostart ni Hyprland. La opción
+`--hyprland` añade un include administrado, inicio del avatar y Super+Alt+W;
+consulta [la integración de escritorio](LIVE_DESKTOP.md).
 
 ## Qué puedes hacer
 
@@ -187,7 +189,7 @@ exec-once = /ruta/al/repo/scripts/run-desktop.sh --avatar-only
 bind = SUPER, W, exec, /ruta/al/repo/scripts/run-desktop.sh
 ```
 
-El instalador no añade estas líneas automáticamente. El inicio en la sesión
+El instalador solo añade integración si se usa `--hyprland`. El inicio en la sesión
 gráfica conserva las variables del compositor y D-Bus; no hace falta un daemon
 de sistema ni privilegios administrativos.
 

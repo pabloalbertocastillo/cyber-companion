@@ -1,6 +1,6 @@
 """Wisp Visual v2 deterministic avatar renderer."""
 
-from .character import render_frame
+from .entity import render_frame
 from .model import (
     CELL_HEIGHT,
     CELL_WIDTH,

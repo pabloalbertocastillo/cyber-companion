@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Install user launchers pointing to this checkout. No autostart/config changes."""
+"""Install user launchers, optionally integrating with the current Hyprland config."""
 import argparse
 import os
 from pathlib import Path
 import shlex
 import sys
+import shutil
 
 ROOT = Path(__file__).resolve().parents[1]
 MARKER = 'Cyber Companion managed launcher'
@@ -29,6 +30,7 @@ def desktop_quote(value):
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prefix',type=Path,default=Path.home()/'.local')
+    parser.add_argument('--hyprland', action='store_true', help='Enable avatar at login and Super+Alt+W through a managed Hyprland include')
     args=parser.parse_args(); prefix=args.prefix.expanduser().resolve()
     files={}
     for name, target in [('wisp','run-desktop.sh'),('ccctl','ccctl')]:
@@ -39,6 +41,22 @@ def main():
         'Comment=Tu sistema, en contexto','Exec='+desktop_quote(str(prefix/'bin/wisp')),
         'Icon='+str(prefix/'share/icons/hicolor/scalable/apps/io.cybercompanion.Wisp.svg'),
         'Terminal=false','Categories=System;Monitor;','StartupNotify=true',''])
+    hypr_config = Path(os.environ.get('XDG_CONFIG_HOME', str(Path.home()/'.config'))) / 'hypr/hyprland.conf'
+    include = hypr_config.with_name('wisp.conf')
+    source = 'source = ' + str(include)
+    original = None
+    if args.hyprland:
+        if not hypr_config.is_file():
+            parser.error('No Hyprland config found: '+str(hypr_config))
+        original = hypr_config.read_text()
+        if hypr_config.is_symlink():
+            parser.error('Hyprland config is a symlink; add the integration manually.')
+        files[include] = '\n'.join([
+            '# '+MARKER,
+            '# Start once per graphical session; launcher ensures one daemon and UI.',
+            'exec-once = '+shlex.quote(str(prefix/'bin/wisp'))+' --avatar-only',
+            'bind = SUPER ALT, W, exec, '+shlex.quote(str(prefix/'bin/wisp')),
+            ''])
     for path in files:
         if path.is_symlink() or (path.exists() and MARKER not in path.read_text()):
             parser.error(f'El destino ya existe y no pertenece a Wisp: {path}')
@@ -46,6 +64,13 @@ def main():
         path.parent.mkdir(parents=True,exist_ok=True)
         path.write_text(content)
         path.chmod(0o755 if path.parent.name=='bin' else 0o644)
+    if original is not None and source not in original.splitlines():
+        backup = hypr_config.with_name('hyprland.conf.before-wisp')
+        if not backup.exists():
+            shutil.copy2(hypr_config, backup)
+        with hypr_config.open('a') as config:
+            config.write('\n# '+MARKER+'\n'+source+'\n')
+        print('Hyprland: avatar al iniciar sesión; Super+Alt+W abre Wisp. Backup: '+str(backup))
     print('Wisp está en el lanzador de aplicaciones. El checkout debe permanecer en '+str(ROOT))
 
 

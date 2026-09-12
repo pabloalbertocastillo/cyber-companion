@@ -222,7 +222,7 @@ class Daemon:
                         raise ValueError("invalid boolean preference")
                     if key == "monitor" and (type(value) is not str or len(value) > 128):
                         raise ValueError("invalid monitor")
-                    if key.startswith("margin_") and (type(value) is not int or not 0 <= value <= 2048):
+                    if key.startswith("margin_") and (type(value) is not int or not 0 <= value <= 32768):
                         raise ValueError("invalid margin")
                 candidate.preferences.update(params)
             else:

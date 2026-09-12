@@ -12,6 +12,7 @@ from cyber_companion.ui.app import Application, Gtk, GLib, demo_snapshot
 Gtk.init()
 args=argparse.Namespace(demo=True,no_avatar=True,avatar_only=False,screenshot=None,quit_after_capture=False)
 app=Application(args)
+app.set_application_id('io.cybercompanion.Wisp.SmokeTest')
 failures=[]
 
 def check():
@@ -31,6 +32,16 @@ def check():
         app.received(demo_snapshot(),None)
         assert app.ask_button.get_sensitive()
         assert app.atlas is not None
+        assert app.wisp.signal['cpu'] == .34
+        assert app.wisp.signal['network'] == 'NET OK'
+        app.wisp.pointer_motion(None, 290, 80)
+        assert app.wisp.look_target[0] > 0
+        app.wisp.update('busy', True, demo_snapshot())
+        assert app.wisp.look == [0., 0.]
+        assert app.wisp.visual_scale == .96
+        app.wisp.update('unknown', True)
+        assert app.wisp.signal['cpu'] is None
+        assert app.wisp.signal['network'] == 'NET —'
         print('PASS · GTK pages, evidence, bounded answer, discard, disconnect and reconnect',flush=True)
     except Exception as error:
         failures.append(str(error));print('FAIL',repr(error),flush=True)

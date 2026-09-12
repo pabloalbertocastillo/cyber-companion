@@ -172,6 +172,12 @@ class LocalRuntimeTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(status['release'],'0.14.0')
         self.assertEqual(status['presence'],'unknown')
         await self.request('preferences.set',{'reduced_motion':True})
+        await self.request('preferences.set', {'monitor': 'DP-2', 'margin_x': 4736, 'margin_y': 1824})
+        self.assertEqual(self.store.load()['preferences']['margin_x'], 4736)
+        self.assertEqual(self.store.load()['preferences']['monitor'], 'DP-2')
+        for margin in (-1, 32769, True, 1.5):
+            with self.assertRaises(ValueError):
+                await self.request('preferences.set', {'margin_x': margin})
         await self.request('attention.mute',{'seconds':3600})
         self.assertTrue(self.store.load()['preferences']['reduced_motion'])
         self.assertGreater(self.store.load()['preferences']['muted_until'],0)
