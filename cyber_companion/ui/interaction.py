@@ -5,6 +5,19 @@ import math
 AVATAR_WIDTH = 384
 AVATAR_HEIGHT = 336
 MAX_MARGIN = 32768
+AMBIENT_OPACITY = .65
+
+
+def companion_monitor(names, active=None, preferred="", current=None):
+    """Automatic placement stays off the focused output, stable on 3+ screens.
+
+    A connected explicit choice wins. Missing focus or a disconnected preference
+    keeps the current output when possible; one screen remains usable.
+    """
+    if preferred in names:
+        return preferred
+    available = [name for name in names if name != active] or list(names)
+    return current if current in available else next(iter(available), None)
 
 
 @dataclass(frozen=True)
@@ -46,7 +59,7 @@ class AmbientVisibility:
     def step(self, now, dt, active=False, reduced=False):
         if active:
             self.last_active = now
-        target = 1. if active or now-self.last_active < 2.5 else .08
+        target = 1. if active or now-self.last_active < 2.5 else AMBIENT_OPACITY
         if reduced:
             self.opacity = target
         else:

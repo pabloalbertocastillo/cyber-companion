@@ -1,6 +1,23 @@
 import unittest
 
-from cyber_companion.ui.interaction import AmbientVisibility, Output, drag_placement
+from cyber_companion.ui.interaction import AmbientVisibility, Output, drag_placement, companion_monitor
+
+
+class MonitorTests(unittest.TestCase):
+    def test_automatic_moves_to_the_other_screen_when_focus_changes(self):
+        self.assertEqual(companion_monitor(['left', 'right'], 'left', current='left'), 'right')
+        self.assertEqual(companion_monitor(['left', 'right'], 'right', current='right'), 'left')
+
+    def test_three_screens_keep_current_inactive_screen(self):
+        self.assertEqual(companion_monitor(['a', 'b', 'c'], 'a', current='c'), 'c')
+        self.assertEqual(companion_monitor(['a', 'b', 'c'], 'c', current='c'), 'a')
+
+    def test_explicit_choice_disconnection_missing_focus_and_single_screen(self):
+        self.assertEqual(companion_monitor(['a', 'b'], 'a', preferred='a'), 'a')
+        self.assertEqual(companion_monitor(['a', 'b'], 'a', preferred='gone'), 'b')
+        self.assertEqual(companion_monitor(['a', 'b'], current='b'), 'b')
+        self.assertEqual(companion_monitor(['a'], 'a', current='gone'), 'a')
+        self.assertIsNone(companion_monitor([], 'a'))
 
 
 class DragGeometryTests(unittest.TestCase):
@@ -39,7 +56,7 @@ class AmbientTests(unittest.TestCase):
         self.assertEqual(visibility.step(2, .1), 1)
         for i in range(300):
             visibility.step(3+i/60, 1/60)
-        self.assertEqual(visibility.opacity, .08)
+        self.assertEqual(visibility.opacity, .65)
         for i in range(18):
             visibility.step(8+i/60, 1/60, active=True)
         self.assertGreater(visibility.opacity, .98)
@@ -49,7 +66,7 @@ class AmbientTests(unittest.TestCase):
         visibility = AmbientVisibility(0)
         self.assertEqual(visibility.step(100, 1, active=True), 1)
         self.assertEqual(visibility.step(102, 1), 1)
-        self.assertEqual(visibility.step(110, .01, reduced=True), .08)
+        self.assertEqual(visibility.step(110, .01, reduced=True), .65)
         self.assertEqual(visibility.step(111, .01, active=True, reduced=True), 1)
 
 

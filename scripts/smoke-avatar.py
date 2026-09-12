@@ -83,11 +83,22 @@ def check():
         # Opacity does not alter the surface's hit area; all active controls wake it.
         app.avatar.pointer_leave()
         app.avatar.visibility.last_active = 0
-        assert app.avatar.visibility.step(100, 1, reduced=True) == .08
+        assert app.avatar.visibility.step(100, 1, reduced=True) == .65
         app.popover.popup()
         assert app.avatar.interacting
         app.popover.popdown()
         snap = demo_snapshot()
+        # Automatic mode avoids the focused monitor, even when it is fullscreen.
+        connected = list(Gdk.Display.get_default().get_monitors())
+        if len(connected) > 1:
+            snap['preferences']['monitor'] = ''
+            for active in connected:
+                snap['domains']['desktop']['value']['monitor'] = active.get_connector()
+                snap['domains']['desktop']['value']['fullscreen'] = True
+                app.received(snap, None)
+                assert Layer.get_monitor(app.overlay) != active
+                assert app.overlay.get_visible()
+            snap['domains']['desktop']['value']['fullscreen'] = False
         for monitor in Gdk.Display.get_default().get_monitors():
             snap['preferences']['monitor'] = monitor.get_connector()
             app.received(snap, None)

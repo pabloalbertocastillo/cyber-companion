@@ -39,7 +39,7 @@ from ..assistant import explain
 from .animation import Animation
 from .hologram import telemetry, anatomy_scale, paint_entity
 from .interaction import (AVATAR_WIDTH, AVATAR_HEIGHT, Output, drag_placement,
-                          AmbientVisibility)
+                          AMBIENT_OPACITY, AmbientVisibility, companion_monitor)
 
 ROOT = Path(__file__).resolve().parents[2]
 ATLAS = ROOT / "assets/sprites/companion-wisp-system-v0.12.png"
@@ -191,7 +191,7 @@ class Wisp(Gtk.DrawingArea):
         self.visibility.step(time.monotonic(), dt, active, self.reduced)
         if self.visibility.opacity != previous:
             self.queue_draw()
-        interval = 16000 if active else (125000 if self.visibility.opacity < .1 else 42000)
+        interval = 16000 if active else (125000 if self.visibility.opacity <= AMBIENT_OPACITY + .002 else 42000)
         if not self.reduced and self.get_mapped() and now - self.last_tick >= interval:
             # Gentle interpolation keeps changes in load and pointer position fluid.
             elapsed = min(.1, (now-self.last_tick)/1_000_000)
@@ -212,7 +212,19 @@ class Wisp(Gtk.DrawingArea):
             self.look = [0.,0.]
         mount = self.signal["storage"]
         detail = f"\n{mount['path']}: {mount['available']/1024**3:.1f} GiB libres" if mount else ""
-        self.set_tooltip_text("Clic para abrir · Arrastra entre pantallas · Clic derecho para opciones\nNúcleo: CPU · Manto: CPU y memoria · Cuernos: ruta de red local\nMáscara: escritorio · Filamentos violetas: multimedia · VM: máquinas activas\nNúcleo ámbar: temperatura cerca del límite" + detail)
+        cpu = self.signal["cpu"]
+        memory = self.signal["memory"]
+        cpu_text = "sin lectura" if cpu is None else f"{cpu:.0%}"
+        memory_text = "sin lectura" if memory is None else f"{memory:.0%}"
+        vms = self.signal["running_vms"]
+        route = self.signal["route"]
+        route_text = "disponible" if route is True else "sin ruta" if route is False else "sin lectura"
+        self.set_tooltip_text(
+            "Clic para abrir · Arrastra entre pantallas · Clic derecho para opciones"
+            f"\nNúcleo y venas: CPU {cpu_text} · Branquias del manto: memoria {memory_text}"
+            f"\nCuernos: ruta local {route_text} · Máscara: escritorio {self.signal['workspace']}"
+            f"\nVértebras: {vms if vms is not None else 'sin lectura de'} VM activas"
+            "\nFilamentos violetas: multimedia · Núcleo ámbar: temperatura cerca del límite" + detail)
         self.queue_draw()
 
     def draw(self, area, cr, width, height):
@@ -405,7 +417,7 @@ class Application(Gtk.Application):
         self.health_box = box(True, 12); settings.append(self.health_box)
         settings.append(Gtk.Separator())
         settings.append(label("MONITOR DEL AVATAR", "overline"))
-        self.monitors = Gtk.DropDown.new_from_strings(["Automático"])
+        self.monitors = Gtk.DropDown.new_from_strings(["Automático · pantalla sin foco"])
         self.monitors.connect("notify::selected", self.monitor_changed)
         settings.append(self.monitors)
         self.avatar_toggle = Gtk.CheckButton(label="Mostrar avatar en el escritorio")
@@ -739,7 +751,7 @@ class Application(Gtk.Application):
         options = ["", *desk.get("outputs", [])]
         if options != self.monitor_options:
             self.monitor_options = options
-            self.monitors.set_model(Gtk.StringList.new(["Automático", *options[1:]]))
+            self.monitors.set_model(Gtk.StringList.new(["Automático · pantalla sin foco", *options[1:]]))
         self.monitors.set_selected(options.index(prefs["monitor"]) if prefs["monitor"] in options else 0)
         self.updating = False
         issues = [x for x in value["insights"] if x["status"] != "resolved"]
@@ -775,13 +787,11 @@ class Application(Gtk.Application):
                     prefs = dict(prefs, **self.pending_drag_prefs)
             display = Gdk.Display.get_default()
             monitors = display.get_monitors()
-            selected = None
-            for i in range(monitors.get_n_items()):
-                candidate = monitors.get_item(i)
-                if candidate.get_connector() == (prefs["monitor"] or desk.get("monitor")):
-                    selected = candidate; break
-            if selected is None and monitors.get_n_items():
-                selected = monitors.get_item(0)
+            connected = {m.get_connector(): m for m in monitors}
+            current_monitor = Layer.get_monitor(self.overlay)
+            name = companion_monitor(connected, desk.get("monitor"), prefs["monitor"],
+                                     current_monitor.get_connector() if current_monitor else None)
+            selected = connected.get(name)
             if self.dragging:
                 selected = Layer.get_monitor(self.overlay)
             if selected and not self.dragging and Layer.get_monitor(self.overlay) != selected:

@@ -13,15 +13,15 @@ The live Cairo layer maps **fresh** system observations to anatomy:
 
 | Part | System relationship |
 | --- | --- |
-| Core | CPU controls glow, pulse speed and core size; unknown data does not pulse |
+| Core and branching vessels | CPU controls glow, pulse speed and core size; unknown data does not pulse |
 | Core color | Amber when the reported temperature is within 7 °C of its sensor limit |
-| Mantle | Memory use expands and illuminates the outer folds |
+| Mantle | Memory use illuminates seven tapered gill slits on each side and expands the outer folds |
 | Horns | Cyan for a local route, amber for no route, dim for unknown |
 | Violet filaments | Active media playback, not a measured audio spectrum |
 | Overall size | Smoothly scales from 90% to at most 113% based on load and hover |
 
-The HUD and input surface stay 320×280, so readings and drag targets do not jump
-when the character grows. Pointer movement adds subtle eased parallax. Reduced
+The input surface stays 384×336, so drag targets do not jump when the character
+grows. Pointer movement adds subtle eased parallax. Reduced
 motion fixes the scale at 96% and disables pulse and parallax, while readings
 and colors still update. The tooltip explains the anatomy map.
 
@@ -35,20 +35,35 @@ scene or physically simulated lighting.
 Idle motion now uses a slower 2.64-second cycle, with shorter cycles for media
 and processing. Transition rows keep their original timing and exact endpoint
 contracts. The desktop surface is 384×336 logical pixels (20% larger), with
-additional anatomical scaling. Cairo engraves CPU/RAM labels, values and segmented
-meters into mantle facets; workspace sits on the mask, local route on the collar,
-and VM/media marks in the lower filaments. All readings share the character's
-scale and parallax. The outer instrument ring, landing ring, detached readout
-panel and WISP title have been removed. Violet activity bars are decorative media
-activity, **not** an audio spectrum. Amber means an active observation needs
-attention; it does not mean the CPU is necessarily overloaded.
+additional anatomical scaling. CPU vessels branch from the heart across the chest,
+and memory lights tapered gill slits cut into the existing mantle facets. These
+marks follow the sprite mesh's yaw and perspective. Horn ridges show the local
+route. A small forehead glyph replaces the workspace label across the mask;
+six vertebrae in the lower central seam light for running VMs, saturating at six.
+Named workspaces are abbreviated to three characters on the mask. Exact workspace
+names, CPU/memory percentages and VM counts remain in the tooltip and panel.
+The CPU/RAM plates, percentage text, network label, VM label and media bars are
+removed. Active media flows through violet filaments instead. All accents share
+the character's scale and parallax. Amber indicates attention; an amber heart
+also indicates temperature within 7 °C of the reported sensor limit.
 
-After 2.5 seconds without interaction, the avatar eases toward 8% opacity.
+![Anatomical signals on dark and light backgrounds](previews/wisp-living-skin.png)
+
+After 2.5 seconds without interaction, the avatar eases toward 65% opacity.
 Hover restores visibility promptly; dragging, an open menu or the companion
 panel keeps it visible. The generous character input region stays stable at all
 opacities. Reduced motion uses immediate opacity changes and freezes decorative
-motion. Ambient rendering falls to 8 fps after fading; interactive updates use
+motion. Ambient rendering still falls to 8 fps after fading; interactive updates use
 the frame clock. System alerts continue through the existing notification path.
+
+Automatic monitor placement now chooses an output **without focus**. With two
+screens, Wisp moves to the other one as focus changes. With three or more, it
+keeps its current screen while that screen remains inactive. A single screen
+remains usable; missing focus keeps the current connected screen, and unplugging
+an output falls back to another available screen. Explicit monitor selection and
+a manual drag still pin the character; choose **Automático · pantalla sin foco**
+to resume dynamic placement. Fullscreen on the active screen does not hide Wisp
+on the other screen. Session lock and disconnected-service hiding still apply.
 
 During a drag, the original input surface stays mapped and stationary, preserving
 Wayland's implicit pointer grab. Input-transparent preview surfaces follow the
@@ -141,3 +156,15 @@ passed 65 tests. Rendering was inspected on light and dark backgrounds.
 
 These gesture handlers are exercised with synthetic coordinates; a physical
 mouse drag and mixed-DPI compositor behavior still need hands-on acceptance.
+
+
+## Inactive-screen and living-skin revision · 2026-09-12
+
+The full suite passed 68 tests. The daemon lifecycle, GTK panel and real Wayland
+avatar smoke checks passed. Automatic placement was exercised against both real
+outputs with a synthetic focus change and fullscreen state; unit cases cover
+three screens, an unplugged preferred output, missing focus and one/no outputs.
+The existing drag, stale-poll, lock, reconnect and reduced-motion gates still pass.
+The 65% ambient floor retains the 8 fps idle rendering budget. The preview above
+was rendered from the live Cairo compositor at desktop size on light and dark
+backgrounds, with low load, high load/media and idle opacity.

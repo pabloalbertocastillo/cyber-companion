@@ -14,10 +14,12 @@ The live avatar is a dark, horned holographic apparition with a carved mask,
 a luminous core and a fractured spectral mantle. Its projected obsidian facets
 have directional lighting; its heart, mantle and antennae respond to CPU,
 memory and the local network. Its visible size eases with load and hover,
-and pointer parallax adds depth. The enlarged avatar carries CPU/memory
-readouts on its mantle, workspace and network markings on its mask and collar,
-and media activity and running-VM counts in its lower filaments. It fades to
-8% opacity when inactive and wakes on hover, drag, menu or panel interaction.
+and pointer parallax adds depth. CPU vessels branch from the heart, memory illuminates gill slits in the mantle,
+and the horns carry local-route status. A small forehead glyph marks the workspace;
+vertebrae and violet filaments show VM and media activity. Exact readings are
+available on hover and in the panel. It retains 65% opacity when inactive and
+wakes on hover, drag, menu or panel interaction. Automatic placement uses a
+monitor without focus, moving to the other screen as focus changes.
 A stationary input surface keeps dragging smooth across monitors; the chosen
 monitor and position are saved together on release.
 Colors distinguish calm, media, processing and attention states. Readouts only
@@ -46,9 +48,9 @@ contract audit; v0.14 corrects those validation gaps and adds the first runtime
 and desktop slice. Historical architecture documents describe the remaining
 target, including capabilities and provider extensions.
 
-The implementation is on `codex/wisp-desktop-v0.14`, stacked on the architecture
-PR #5. It is a reviewable source release; it has not been installed on your
-Gentoo/Hyprland host. See the guide for the outstanding host acceptance checks.
+The live desktop implementation is on `codex/wisp-live-integration`, built on
+`codex/wisp-desktop-v0.14`. It is installed on the Gentoo/Hyprland host; see
+[live validation and remaining acceptance checks](docs/LIVE_DESKTOP.md).
 
 ## Wisp Visual v0.12
 
